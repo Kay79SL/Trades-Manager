@@ -444,7 +444,7 @@
       <tbody>
         <tr><td>25 Apr</td><td>Sat (today)</td><td><span class="day-badge" style="background:#E8D5B7"></span>Phase 0 — Setup &amp; Data</td><td>~2h</td></tr>
         <tr><td>26 Apr</td><td>Sun</td><td><span class="day-badge" style="background:#D4A0A0"></span>Phase 1 — MongoDB Ingestion</td><td>~2h</td></tr>
-        <tr><td>27 Apr</td><td>Mon</td><td><span class="day-badge" style="background:#A8B89F"></span>Phase 2 — Neo4j AuraDB</td><td>~2h</td></tr>
+        <tr><td>27 Apr</td><td>Mon</td><td><span class="day-badge" style="background:#A8B89F"></span>Phase 2 — Neo4j + Docker</td><td>~2h</td></tr>
         <tr><td>28 Apr</td><td>Tue</td><td><span class="day-badge" style="background:#C0A8D4"></span>Phase 3 — LLM Entity Extraction</td><td>~2h</td></tr>
         <tr><td>29 Apr</td><td>Wed</td><td><span class="day-badge" style="background:#D4896B"></span>Phase 4 — Vector Embeddings</td><td>~2h</td></tr>
         <tr><td>30 Apr</td><td>Thu</td><td><span class="day-badge" style="background:#C9A57B"></span>Phase 5 — Retrieval Orchestration</td><td>~2h</td></tr>
@@ -454,7 +454,6 @@
         <tr><td>4 May</td><td>Mon</td><td><span class="day-badge" style="background:#C9B47B"></span>Phase 9 — Report Writing</td><td>~2h</td></tr>
         <tr><td>5 May</td><td>Tue</td><td><span class="day-badge" style="background:#B87555"></span>Phase 10 — Slides &amp; Polish</td><td>~2h</td></tr>
         <tr><td>6 May</td><td>Wed</td><td><span class="day-badge" style="background:#A85A3A"></span>Phase 11 — Submit &amp; Present</td><td>varies</td></tr>
-        <tr><td>post-CA</td><td>weekend</td><td><span class="day-badge" style="background:#0078D4"></span>Phase 12 — Cloud Docker on Azure (optional)</td><td>~6-8h</td></tr>
       </tbody>
     </table>
   </div>
@@ -635,7 +634,7 @@ git push --tags</pre></div>
       <div class="phase-title-block">
         <div class="phase-num">2</div>
         <div class="phase-meta">
-          <h3>Neo4j AuraDB (Cloud)</h3>
+          <h3>Neo4j + Docker</h3>
           <div class="day">Monday 27 April • ~2h • sage</div>
         </div>
       </div>
@@ -643,47 +642,40 @@ git push --tags</pre></div>
       <div class="chevron">▾</div>
     </div>
     <div class="phase-body">
-      <div class="why"><strong>Why</strong>AuraDB Free is Neo4j's managed cloud service — same as MongoDB Atlas but for Neo4j. Both databases live in the cloud, no local install, no admin rights needed. Cleaner architecture story for the report. (Cloud Docker on Azure is now Phase 12, post-submission.)</div>
+      <div class="why"><strong>Why</strong>Docker isolates Neo4j from your system — no Neo4j Desktop install drama, no SSO authentication issues. The container starts in seconds and your graph data persists in a mounted volume.</div>
       <ol class="steps">
-        <li class="tickable" data-key="p2_01"><span class="cb"></span><span class="li-text">Open <code>https://console.neo4j.io/</code> in your browser, sign in with Google</span></li>
+        <li class="tickable" data-key="p2_01"><span class="cb"></span><span class="li-text">Verify Docker Desktop is installed and running</span></li>
+        <div class="code-wrap"><pre class="code-block">docker --version
+docker info</pre></div>
+        <div class="warn">If Docker Desktop isn't installed, download from docker.com/products/docker-desktop. Requires WSL2 enabled on Windows. May need a reboot.</div>
 
-        <li class="tickable" data-key="p2_02"><span class="cb"></span><span class="li-text">Click <strong>Create Instance</strong> → <strong>AuraDB Free</strong>. Name: <code>dacarag</code>. Region: <strong>Europe (Ireland)</strong></span></li>
+        <li class="tickable" data-key="p2_02"><span class="cb"></span><span class="li-text">Start the Neo4j container in the background</span></li>
+        <div class="code-wrap"><pre class="code-block">cd F:\Apps\DACARag
+docker compose up -d</pre></div>
 
-        <li class="tickable" data-key="p2_03"><span class="cb"></span><span class="li-text"><strong>CRITICAL</strong>: When the credentials modal appears, click <strong>Download</strong> to save the .txt file BEFORE clicking Continue. The password is shown ONCE.</span></li>
-        <div class="warn">Save the credentials file to a safe location (e.g. F:\Apps\DACARag\docs\aura_credentials.txt — but make sure docs/ is gitignored if you keep it there). If you lose the password, you have to delete the instance and start over.</div>
+        <li class="tickable" data-key="p2_03"><span class="cb"></span><span class="li-text">Verify the container is "healthy"</span></li>
+        <div class="code-wrap"><pre class="code-block">docker compose ps</pre></div>
 
-        <li class="tickable" data-key="p2_04"><span class="cb"></span><span class="li-text">Wait 2-3 minutes for instance status to change from "Creating..." to "Running"</span></li>
+        <li class="tickable" data-key="p2_04"><span class="cb"></span><span class="li-text">Open Neo4j Browser at <code>http://localhost:7474</code> and log in with <code>neo4j</code> / your password from <code>.env</code></span></li>
 
-        <li class="tickable" data-key="p2_05"><span class="cb"></span><span class="li-text">Update <code>.env</code> with the three values from your credentials file</span></li>
-        <div class="code-wrap"><pre class="code-block">notepad .env</pre></div>
-        <div class="code-wrap"><pre class="code-block">NEO4J_URI=neo4j+s://abc12345.databases.neo4j.io
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=&lt;your_auto_generated_password&gt;</pre></div>
+        <li class="tickable" data-key="p2_05"><span class="cb"></span><span class="li-text">Ask Claude to write <code>ingest\load_neo4j.py</code> — read from MongoDB and create nodes (Customer, Trade, JobType, Item, Invoice, Email) and relationships (REQUESTED, QUOTED_FOR, CONTAINS, NEEDS_ITEM, BELONGS_TO, SENT_BY)</span></li>
 
-        <li class="tickable" data-key="p2_06"><span class="cb"></span><span class="li-text">Test the connection</span></li>
-        <div class="code-wrap"><pre class="code-block">python -c "from neo4j import GraphDatabase; from dotenv import load_dotenv; import os; load_dotenv(); d=GraphDatabase.driver(os.getenv('NEO4J_URI'), auth=(os.getenv('NEO4J_USER'), os.getenv('NEO4J_PASSWORD'))); d.verify_connectivity(); print('connected'); d.close()"</pre></div>
-        <div class="note">Want to see: <code>connected</code>. If you see an auth error, double-check the password — pasted with a leading/trailing space is the most common mistake.</div>
-
-        <li class="tickable" data-key="p2_07"><span class="cb"></span><span class="li-text">Ask Claude to write <code>ingest\load_neo4j.py</code> — reads from MongoDB and creates nodes (Customer, Trade, JobType, Item, Invoice, Email) and relationships (REQUESTED, QUOTED_FOR, CONTAINS, NEEDS_ITEM, BELONGS_TO, SENT_BY)</span></li>
-
-        <li class="tickable" data-key="p2_08"><span class="cb"></span><span class="li-text">Run the graph loader</span></li>
+        <li class="tickable" data-key="p2_06"><span class="cb"></span><span class="li-text">Run the graph loader</span></li>
         <div class="code-wrap"><pre class="code-block">python ingest\load_neo4j.py</pre></div>
 
-        <li class="tickable" data-key="p2_09"><span class="cb"></span><span class="li-text">Open Neo4j Browser from the AuraDB console (click <strong>Open</strong> on your instance), enter your password</span></li>
-
-        <li class="tickable" data-key="p2_10"><span class="cb"></span><span class="li-text">Verify node and relationship counts via Cypher</span></li>
+        <li class="tickable" data-key="p2_07"><span class="cb"></span><span class="li-text">In Neo4j Browser, verify node and relationship counts</span></li>
         <div class="code-wrap"><pre class="code-block">MATCH (n) RETURN labels(n) AS label, count(*) AS count ORDER BY count DESC;
 MATCH ()-[r]->() RETURN type(r) AS rel, count(*) AS count ORDER BY count DESC;</pre></div>
 
-        <li class="tickable" data-key="p2_11"><span class="cb"></span><span class="li-text">Visualize a sample subgraph</span></li>
+        <li class="tickable" data-key="p2_08"><span class="cb"></span><span class="li-text">Visualize a sample subgraph in Neo4j Browser</span></li>
         <div class="code-wrap"><pre class="code-block">MATCH (c:Customer)-[:REQUESTED]-&gt;(j:JobType)&lt;-[:CONTAINS]-(i:Invoice)
 RETURN c, j, i LIMIT 25;</pre></div>
 
-        <li class="tickable" data-key="p2_12"><span class="cb"></span><span class="li-text">Take a screenshot of the graph for the report's "implementation" section, save to <code>docs\neo4j_sample.png</code></span></li>
+        <li class="tickable" data-key="p2_09"><span class="cb"></span><span class="li-text">Take a screenshot of the graph for the report's "implementation" section, save to <code>docs\neo4j_sample.png</code></span></li>
 
-        <li class="tickable" data-key="p2_13"><span class="cb"></span><span class="li-text">Commit, tag, push</span></li>
-        <div class="code-wrap"><pre class="code-block">git add ingest\load_neo4j.py
-git commit -m "Phase 2: Neo4j AuraDB + graph build"
+        <li class="tickable" data-key="p2_10"><span class="cb"></span><span class="li-text">Commit, tag, push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add .
+git commit -m "Phase 2: Neo4j Docker + graph build"
 git tag v0.2-neo4j
 git push --tags</pre></div>
       </ol>
@@ -697,14 +689,14 @@ git push --tags</pre></div>
         <div class="phase-num">3</div>
         <div class="phase-meta">
           <h3>Multi-source Ingestion &amp; LLM Enrichment</h3>
-          <div class="day">Tuesday 28 — Wednesday 29 April • ~4h • soft plum</div>
+          <div class="day">Tuesday 28 — Thursday 1 May • ~5h • soft plum</div>
         </div>
       </div>
       <div class="phase-counter" data-phase="p3">0 / 0</div>
       <div class="chevron">▾</div>
     </div>
     <div class="phase-body">
-      <div class="why"><strong>Why</strong>Two input streams converge here: unstructured email prose (LLM-extracted into structured fields) and semi-structured purchase orders (Excel-parsed plus LLM-analysed). Both flow into all three stores — Mongo, GridFS, and Neo4j — so the chatbot's <em>pricing intelligence layer</em> can later cross-reference customer history (invoices), current quotes (POs), and canonical recipes (graph) when predicting a quote for an incoming request.</div>
+      <div class="why"><strong>Why</strong>Two input streams converge here: unstructured email prose (LLM-extracted into structured fields) and PDF purchase orders (read with pypdf, then sent to Claude for structured extraction). Both flow into all three stores — Mongo, GridFS, and Neo4j — so the chatbot's <em>pricing intelligence layer</em> can later cross-reference customer history (invoices), current quotes (POs), and canonical recipes (graph) when predicting a quote for an incoming request.</div>
 
       <h4 style="font-family:'Playfair Display',serif;color:#553F70;margin:1.2rem 0 0.4rem;font-size:1.1rem;">3A — Email entity extraction</h4>
 
@@ -720,50 +712,63 @@ git push --tags</pre></div>
         <li class="tickable" data-key="p3_04"><span class="cb"></span><span class="li-text">Test on 5 emails first, verify quality</span></li>
         <div class="code-wrap"><pre class="code-block">python ingest\extract_entities.py --limit 5</pre></div>
 
-        <li class="tickable" data-key="p3_05"><span class="cb"></span><span class="li-text">Run the full extraction across all 100 emails (~5min, ~€0.10 cost)</span></li>
+        <li class="tickable" data-key="p3_05"><span class="cb"></span><span class="li-text">Run the full extraction across all 100 emails (~5min, ~€0.10)</span></li>
         <div class="code-wrap"><pre class="code-block">python ingest\extract_entities.py</pre></div>
 
-        <li class="tickable" data-key="p3_06"><span class="cb"></span><span class="li-text">Spot-check distribution and quality</span></li>
-        <div class="code-wrap"><pre class="code-block">python -c "from pymongo import MongoClient; from dotenv import load_dotenv; import os, json; load_dotenv(); db=MongoClient(os.getenv('MONGO_URI'))[os.getenv('MONGO_DB')]; [print(json.dumps(e['extracted'], indent=2, default=str)) for e in db.emails.aggregate([{'$sample':{'size':3}}])]"</pre></div>
+        <li class="tickable" data-key="p3_06"><span class="cb"></span><span class="li-text">If first run produced null extractions, fix and re-run</span></li>
+        <div class="code-wrap"><pre class="code-block">python test\diagnose.py
+python test\fix_null_extractions.py
+python ingest\extract_entities.py</pre></div>
+        <div class="note">Lesson learned: count queries via <code>{extracted: {$exists: True}}</code> also match null values. Always verify with <code>{$type: "object"}</code> for real-only checks.</div>
 
-        <li class="tickable" data-key="p3_07"><span class="cb"></span><span class="li-text">Add new graph edges from extractions: <code>(Email)-[:ABOUT_JOB]-&gt;(JobType)</code> and <code>(Email)-[:MENTIONS_ITEM]-&gt;(Item)</code></span></li>
-        <div class="code-wrap"><pre class="code-block">python ingest\link_email_extractions_to_graph.py</pre></div>
+        <li class="tickable" data-key="p3_07"><span class="cb"></span><span class="li-text">Spot-check distribution and quality</span></li>
+        <div class="code-wrap"><pre class="code-block">python test\check_extraction.py</pre></div>
       </ol>
 
-      <h4 style="font-family:'Playfair Display',serif;color:#553F70;margin:1.5rem 0 0.4rem;font-size:1.1rem;">3B — Purchase Order ingestion (Excel → MongoDB → GridFS)</h4>
+      <h4 style="font-family:'Playfair Display',serif;color:#553F70;margin:1.5rem 0 0.4rem;font-size:1.1rem;">3B — Purchase Order ingestion (PDF + AI)</h4>
 
       <ol class="steps">
         <li class="tickable" data-key="p3_08"><span class="cb"></span><span class="li-text">Save the 15 PDFs to <code>data\purchase_orders\</code> (one per PO sheet, named with the PO number)</span></li>
 
-        <li class="tickable" data-key="p3_09"><span class="cb"></span><span class="li-text">Save <code>ingest\extract_pos.py</code> to your project (parses Excel sheets, runs LLM enrichment, saves to <code>pos</code> collection)</span></li>
+        <li class="tickable" data-key="p3_09"><span class="cb"></span><span class="li-text">Install pypdf and add to requirements.txt</span></li>
+        <div class="code-wrap"><pre class="code-block">python -m pip install pypdf
+echo pypdf^>=4.0 ^>^> requirements.txt</pre></div>
 
-        <li class="tickable" data-key="p3_10"><span class="cb"></span><span class="li-text">Run the parser + LLM enricher (~30 sec, ~€0.02 cost)</span></li>
-        <div class="code-wrap"><pre class="code-block">python ingest\extract_pos.py</pre></div>
-        <div class="note">Verify in Atlas Data Explorer: new collection <code>pos</code> with 15 documents, each with structured fields plus <code>extracted</code> sub-document.</div>
+        <li class="tickable" data-key="p3_10"><span class="cb"></span><span class="li-text">Save <code>ingest\extract_pos_from_pdf.py</code> to your project (reads PDFs, sends text to Claude, parses structured PO JSON, links cust_email to customer_id, saves to <code>pos</code> collection)</span></li>
 
-        <li class="tickable" data-key="p3_11"><span class="cb"></span><span class="li-text">Save <code>ingest\load_po_pdfs.py</code> and run it — stores all 15 PDF binaries in GridFS bucket <code>po_files</code></span></li>
+        <li class="tickable" data-key="p3_11"><span class="cb"></span><span class="li-text">Dry-run to see the prompt before spending credit</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\extract_pos_from_pdf.py --dry-run</pre></div>
+
+        <li class="tickable" data-key="p3_12"><span class="cb"></span><span class="li-text">Test on 1 PO first (~€0.05)</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\extract_pos_from_pdf.py --limit 1</pre></div>
+
+        <li class="tickable" data-key="p3_13"><span class="cb"></span><span class="li-text">Full extraction of all 15 POs (~2 min, ~€0.70)</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\extract_pos_from_pdf.py</pre></div>
+        <div class="note">Verify in Atlas Data Explorer: <code>pos</code> collection has 15 documents, each with structured fields, line_items array, and matched_customer_id.</div>
+
+        <li class="tickable" data-key="p3_14"><span class="cb"></span><span class="li-text">Save <code>ingest\load_po_pdfs.py</code> and run it — stores all 15 PDF binaries in GridFS bucket <code>po_files</code></span></li>
         <div class="code-wrap"><pre class="code-block">python ingest\load_po_pdfs.py</pre></div>
-        <div class="note">Mirrors the .eml → email_files pattern. Each PDF retrievable later by po_number.</div>
+        <div class="note">Mirrors the .eml → email_files pattern. Each PDF retrievable later by po_number, with <code>pdf_gridfs_filename</code> cross-link added to each pos document.</div>
 
-        <li class="tickable" data-key="p3_12"><span class="cb"></span><span class="li-text">Verify referential integrity: every PO has a matched_customer_id and a matched_job_type_id</span></li>
-        <div class="code-wrap"><pre class="code-block">python -c "from pymongo import MongoClient; from dotenv import load_dotenv; import os; load_dotenv(); db=MongoClient(os.getenv('MONGO_URI'))[os.getenv('MONGO_DB')]; print('POs with customer:', db.pos.count_documents({'matched_customer_id':{'$ne':None}}), '/15'); print('POs with job_type:', db.pos.count_documents({'matched_job_type_id':{'$ne':None}}), '/15')"</pre></div>
+        <li class="tickable" data-key="p3_15"><span class="cb"></span><span class="li-text">Verify referential integrity</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "from pymongo import MongoClient; from dotenv import load_dotenv; import os; load_dotenv(); db=MongoClient(os.getenv('MONGO_URI'))[os.getenv('MONGO_DB')]; print('POs:', db.pos.count_documents({})); print('with matched_customer_id:', db.pos.count_documents({'matched_customer_id':{'$ne':None}})); print('with pdf in gridfs:', db.pos.count_documents({'pdf_gridfs_filename':{'$exists':True}}))"</pre></div>
       </ol>
 
       <h4 style="font-family:'Playfair Display',serif;color:#553F70;margin:1.5rem 0 0.4rem;font-size:1.1rem;">3C — POs into Neo4j graph</h4>
 
       <ol class="steps">
-        <li class="tickable" data-key="p3_13"><span class="cb"></span><span class="li-text">Save <code>ingest\load_pos_to_neo4j.py</code> and run it — creates PO nodes and 3 new relationship types</span></li>
+        <li class="tickable" data-key="p3_16"><span class="cb"></span><span class="li-text">Save <code>ingest\load_pos_to_neo4j.py</code> and run it — does free-form job_type matching (3-strategy: exact, substring, token-overlap) and creates PO nodes plus 3 new relationship types</span></li>
         <div class="code-wrap"><pre class="code-block">python ingest\load_pos_to_neo4j.py</pre></div>
         <div class="note">Adds: <code>(PO)-[:FOR_CUSTOMER]-&gt;(Customer)</code>, <code>(PO)-[:FOR_JOB]-&gt;(JobType)</code>, <code>(PO)-[:CONTAINS_ITEM]-&gt;(Item)</code>. The graph now has both backward-looking history (Invoices) and forward-looking quotes (POs) for the same customer/job/item entities.</div>
 
-        <li class="tickable" data-key="p3_14"><span class="cb"></span><span class="li-text">In Neo4j Browser, verify the graph with both invoices and POs visible for one customer</span></li>
+        <li class="tickable" data-key="p3_17"><span class="cb"></span><span class="li-text">In Neo4j Browser, verify the graph with both invoices and POs visible for one customer</span></li>
         <div class="code-wrap"><pre class="code-block">MATCH (c:Customer {first_name:'Gerard'})&lt;-[:FOR_CUSTOMER]-(i:Invoice)
 OPTIONAL MATCH (c)&lt;-[:FOR_CUSTOMER]-(po:PO)
 RETURN c, i, po LIMIT 25;</pre></div>
 
-        <li class="tickable" data-key="p3_15"><span class="cb"></span><span class="li-text">Take a screenshot of the combined graph view for the report — save to <code>docs\neo4j_with_pos.png</code></span></li>
+        <li class="tickable" data-key="p3_18"><span class="cb"></span><span class="li-text">Take a screenshot of the combined graph view for the report — save to <code>docs\neo4j_with_pos.png</code></span></li>
 
-        <li class="tickable" data-key="p3_16"><span class="cb"></span><span class="li-text">Run a smoke test of the pricing-intelligence query (this previews Phase 5)</span></li>
+        <li class="tickable" data-key="p3_19"><span class="cb"></span><span class="li-text">Run a smoke test of the pricing-intelligence query (preview of Phase 5)</span></li>
         <div class="code-wrap"><pre class="code-block">// All historical pricing for boiler installation
 MATCH (j:JobType {job_name:'Boiler installation'})
 OPTIONAL MATCH (j)&lt;-[:FOR_JOB]-(i:Invoice)
@@ -773,10 +778,23 @@ RETURN j.job_name AS job,
        avg(i.labour_cost_ex_vat) AS avg_labour,
        count(DISTINCT po)       AS pending_pos,
        avg(po.subtotal_ex_vat)  AS avg_po_value;</pre></div>
+      </ol>
 
-        <li class="tickable" data-key="p3_17"><span class="cb"></span><span class="li-text">Commit, tag, push</span></li>
-        <div class="code-wrap"><pre class="code-block">git add .
-git commit -m "Phase 3: email extraction + PO ingestion to Mongo/GridFS/Neo4j"
+      <h4 style="font-family:'Playfair Display',serif;color:#553F70;margin:1.5rem 0 0.4rem;font-size:1.1rem;">3D — Pipeline observability &amp; commit</h4>
+
+      <ol class="steps">
+        <li class="tickable" data-key="p3_20"><span class="cb"></span><span class="li-text">Save <code>ingest\check_pipeline.py</code> — read-only health auditor that persists every check to <code>pipeline_audits</code> and every error to <code>pipeline_errors</code> collections (de-duplicated)</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\check_pipeline.py</pre></div>
+        <div class="note">Should print "Pipeline is in a clean state" with all greens: 100/100 emails, 15/15 POs, 15/15 PDFs in GridFS, 15/15 customer links, 15/15 job_type matches.</div>
+
+        <li class="tickable" data-key="p3_21"><span class="cb"></span><span class="li-text">Save the interactive notebook version <code>notebooks\check_pipeline.ipynb</code> for ad-hoc investigation</span></li>
+
+        <li class="tickable" data-key="p3_22"><span class="cb"></span><span class="li-text">Save reference templates for post-submission live mailbox integration: <code>ingest\read_outlook.py</code> (Microsoft Graph) — NOT to be run before May 6</span></li>
+
+        <li class="tickable" data-key="p3_23"><span class="cb"></span><span class="li-text">Commit, tag, push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add ingest\ test\ notebooks\ data\purchase_orders\ requirements.txt
+git rm ingest\extract_pos.py 2&gt;$null  # remove old Excel script if present
+git commit -m "Phase 3 complete: emails (100/100) + POs via PDF+AI (15/15) + Neo4j + GridFS"
 git tag v0.3-multi-source
 git push --tags</pre></div>
       </ol>
@@ -851,32 +869,13 @@ git push --tags</pre></div>
     <div class="phase-body">
       <div class="why"><strong>Why</strong>The query router is what makes a hybrid RAG smarter than a plain vector RAG. It decides per question whether to use vector search, graph traversal, or exact lookup — and combines results before the LLM sees them.</div>
       <ol class="steps">
-        <li class="tickable" data-key="p5_01"><span class="cb"></span><span class="li-text">Create <code>retrieve\router.py</code> — classify query intent: <em>semantic</em>, <em>relational</em>, <em>exact_lookup</em>, or <em>predict_quote</em></span></li>
+        <li class="tickable" data-key="p5_01"><span class="cb"></span><span class="li-text">Create <code>retrieve\router.py</code> — classify query intent: <em>semantic</em>, <em>relational</em>, or <em>exact_lookup</em></span></li>
 
         <li class="tickable" data-key="p5_02"><span class="cb"></span><span class="li-text">Create <code>retrieve\vector_search.py</code> — top-k cosine similarity from Atlas Vector Search</span></li>
 
         <li class="tickable" data-key="p5_03"><span class="cb"></span><span class="li-text">Create <code>retrieve\graph_search.py</code> — three Cypher templates: customer history, similar past jobs, multi-hop supplier paths</span></li>
 
         <li class="tickable" data-key="p5_04"><span class="cb"></span><span class="li-text">Create <code>retrieve\mongo_lookup.py</code> — fetch full documents by id or filter</span></li>
-
-        <li class="tickable" data-key="p5_pp"><span class="cb"></span><span class="li-text"><strong>NEW</strong>: Create <code>retrieve\predict_quote.py</code> — the pricing intelligence layer. For a given <code>job_type_id</code>, aggregates labour cost statistics from past invoices (Mongo), pulls typical materials with quantities and unit prices from Neo4j (<code>USES_ITEM</code> edges), cross-checks against POs for the same job_type, and returns a structured quote prediction with confidence and basis.</span></li>
-        <div class="code-wrap"><pre class="code-block">{
-  "job_type_id": "pl_01",
-  "job_name": "Boiler installation",
-  "predicted_labour_eur": 450,
-  "labour_range_eur": [400, 520],
-  "predicted_materials_eur": 1262,
-  "typical_materials": [
-    {"item_id": "it_pl_009", "name": "Gas boiler 24kW", "qty": 1, "price": 1100},
-    {"item_id": "it_pl_026", "name": "Boiler flue kit", "qty": 1, "price": 85},
-    ...
-  ],
-  "predicted_total_ex_vat": 1712,
-  "predicted_total_inc_vat": 2106,
-  "confidence": "high",
-  "based_on": {"past_invoices": 8, "pos": 1, "median_or_avg": "median"}
-}</pre></code></div>
-        <div class="note">This is the killer feature — it uses ALL THREE storage stores in one query path: Mongo for historical statistics, Neo4j for canonical recipes, and POs for current market quotes. Demonstrates polyglot persistence in action.</div>
 
         <li class="tickable" data-key="p5_05"><span class="cb"></span><span class="li-text">Create <code>retrieve\context_assembler.py</code> — merge results from all three paths, dedupe, rank, build LLM prompt</span></li>
 
@@ -917,8 +916,6 @@ git push</pre></div>
         <li class="tickable" data-key="p6_03"><span class="cb"></span><span class="li-text">Wire up: user message → router → retrieval → Claude API → streaming response</span></li>
 
         <li class="tickable" data-key="p6_04"><span class="cb"></span><span class="li-text">Add a sources panel (sidebar or expander) showing which invoices, emails, or graph paths were retrieved</span></li>
-
-        <li class="tickable" data-key="p6_qp"><span class="cb"></span><span class="li-text"><strong>NEW</strong>: Add a "Predicted Quote" panel that appears when the router detects a <em>predict_quote</em> intent. Renders the labour estimate, materials breakdown table, and the basis (n past invoices + n POs). Use Streamlit <code>st.metric</code>, <code>st.dataframe</code>, and a small bar chart showing the labour cost distribution that the prediction was drawn from.</span></li>
 
         <li class="tickable" data-key="p6_05"><span class="cb"></span><span class="li-text">Persist chat history to MongoDB <code>chat_history</code> collection</span></li>
 
@@ -1131,173 +1128,13 @@ git push --tags</pre></div>
         <li class="tickable" data-key="p11_03"><span class="cb"></span><span class="li-text">Submit the report PDF to Moodle</span></li>
         <li class="tickable" data-key="p11_04"><span class="cb"></span><span class="li-text">Submit the GitHub repo URL</span></li>
         <li class="tickable" data-key="p11_05"><span class="cb"></span><span class="li-text">Submit the backup demo video</span></li>
-        <li class="tickable" data-key="p11_06"><span class="cb"></span><span class="li-text">Verify both cloud DBs (Atlas + AuraDB) respond to a quick ping before walking into the presentation</span></li>
+        <li class="tickable" data-key="p11_06"><span class="cb"></span><span class="li-text">Run <code>docker compose up -d</code> one last time before walking into the presentation</span></li>
         <li class="tickable" data-key="p11_07"><span class="cb"></span><span class="li-text">Present</span></li>
         <li class="tickable" data-key="p11_08"><span class="cb"></span><span class="li-text">Push the final tag</span></li>
         <div class="code-wrap"><pre class="code-block">git tag v1.0-submitted
 git push --tags</pre></div>
         <li class="tickable" data-key="p11_09"><span class="cb"></span><span class="li-text">Celebrate. You earned it.</span></li>
       </ol>
-    </div>
-  </section>
-
-  <!-- ===== PHASE 12 — POST-SUBMISSION CLOUD DOCKER ===== -->
-  <section class="phase" id="p12" style="--c:#0078D4; --c-light:#DEEEF9; --c-mid:#5BA8E0; --c-dark:#003F6F;">
-    <div class="phase-header" data-toggle="p12">
-      <div class="phase-title-block">
-        <div class="phase-num">12</div>
-        <div class="phase-meta">
-          <h3>Cloud Docker on Azure (optional, post-submission)</h3>
-          <div class="day">After CA submission • ~6-8h over a weekend • Azure blue</div>
-        </div>
-      </div>
-      <div class="phase-counter" data-phase="p12">0 / 0</div>
-      <div class="chevron">▾</div>
-    </div>
-    <div class="phase-body">
-      <div class="why"><strong>Why</strong>Real cloud Docker experience for your CV. Containerise your DACARag Streamlit chatbot and deploy it to Azure Container Apps using your Azure for Students €100 credit. The CA is already submitted — this is pure learning, no deadline pressure. By the end you'll have a publicly accessible URL hosting your chatbot.</div>
-
-      <div class="note" style="margin-left:0; margin-bottom:1.2rem;">This phase is intentionally separate from the CA. Don't start it until after Wednesday 6 May. The skills here are valuable but they're a different track from "design a polyglot persistence architecture for RAG" which is what the CA grades.</div>
-
-      <ol class="steps">
-
-        <li class="tickable" data-key="p12_01"><span class="cb"></span><span class="li-text"><strong>Sub-phase A — Sign up for Azure for Students.</strong> Use your DkIT email address.</span></li>
-        <div class="code-wrap"><pre class="code-block">https://azure.microsoft.com/en-us/free/students/</pre></div>
-        <div class="note">No credit card required. Get €100 credit + 12 months of free services. Verification with your DkIT email may take a few minutes.</div>
-
-        <li class="tickable" data-key="p12_02"><span class="cb"></span><span class="li-text">Once approved, sign in to <code>portal.azure.com</code></span></li>
-
-        <li class="tickable" data-key="p12_03"><span class="cb"></span><span class="li-text">Install Azure CLI on your laptop (no admin rights needed for the user-scoped installer)</span></li>
-        <div class="code-wrap"><pre class="code-block">winget install -e --id Microsoft.AzureCLI</pre></div>
-        <div class="note">If winget isn't available, download the MSI from <code>aka.ms/installazurecliwindows</code>. Open a NEW PowerShell window after install.</div>
-
-        <li class="tickable" data-key="p12_04"><span class="cb"></span><span class="li-text">Verify Azure CLI works and log in</span></li>
-        <div class="code-wrap"><pre class="code-block">az --version
-az login</pre></div>
-
-        <li class="tickable" data-key="p12_05"><span class="cb"></span><span class="li-text"><strong>Sub-phase B — Containerise the Streamlit app.</strong> Create a <code>Dockerfile</code> in the project root</span></li>
-        <div class="code-wrap"><pre class="code-block">FROM python:3.11-slim
-
-WORKDIR /app
-
-# Copy requirements first for better Docker layer caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the app code
-COPY app/ ./app/
-COPY retrieve/ ./retrieve/
-
-# Streamlit needs a port and a healthcheck endpoint
-EXPOSE 8501
-
-# Run the chatbot
-CMD ["streamlit", "run", "app/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]</pre></div>
-
-        <li class="tickable" data-key="p12_06"><span class="cb"></span><span class="li-text">Create a <code>.dockerignore</code> to keep the image small</span></li>
-        <div class="code-wrap"><pre class="code-block">venv/
-.venv/
-.env
-.env.example
-neo4j/
-.git/
-__pycache__/
-*.pyc
-.pytest_cache/
-notebooks/
-docs/
-data/emails/
-*.log</pre></div>
-
-        <li class="tickable" data-key="p12_07"><span class="cb"></span><span class="li-text">Test the build locally with Azure Container Registry's cloud build (no local Docker needed!)</span></li>
-        <div class="code-wrap"><pre class="code-block">az group create --name dacarag-rg --location northeurope</pre></div>
-
-        <li class="tickable" data-key="p12_08"><span class="cb"></span><span class="li-text">Create an Azure Container Registry (ACR)</span></li>
-        <div class="code-wrap"><pre class="code-block">az acr create --resource-group dacarag-rg --name dacaragacr --sku Basic --admin-enabled true</pre></div>
-        <div class="note">If "dacaragacr" is taken, try "dacaragacr2026" or another suffix. ACR names must be globally unique.</div>
-
-        <li class="tickable" data-key="p12_09"><span class="cb"></span><span class="li-text">Build the image in the cloud (no local Docker required)</span></li>
-        <div class="code-wrap"><pre class="code-block">cd F:\Apps\DACARag
-az acr build --registry dacaragacr --image dacarag:v1 .</pre></div>
-        <div class="note">This uploads your code to Azure, builds the Docker image there, and pushes it to your registry. Takes 3-5 minutes the first time. Watch the logs stream in your terminal.</div>
-
-        <li class="tickable" data-key="p12_10"><span class="cb"></span><span class="li-text"><strong>Sub-phase C — Deploy to Azure Container Apps.</strong> Install the Container Apps extension</span></li>
-        <div class="code-wrap"><pre class="code-block">az extension add --name containerapp --upgrade
-az provider register --namespace Microsoft.App
-az provider register --namespace Microsoft.OperationalInsights</pre></div>
-
-        <li class="tickable" data-key="p12_11"><span class="cb"></span><span class="li-text">Create a Container Apps environment</span></li>
-        <div class="code-wrap"><pre class="code-block">az containerapp env create \
-  --name dacarag-env \
-  --resource-group dacarag-rg \
-  --location northeurope</pre></div>
-
-        <li class="tickable" data-key="p12_12"><span class="cb"></span><span class="li-text">Get your ACR credentials (needed for the deploy step)</span></li>
-        <div class="code-wrap"><pre class="code-block">az acr credential show --name dacaragacr</pre></div>
-        <div class="note">Note the <code>username</code> and <code>password</code> from the output — you'll paste them in the next step.</div>
-
-        <li class="tickable" data-key="p12_13"><span class="cb"></span><span class="li-text">Deploy the chatbot — replace the placeholders with your real values</span></li>
-        <div class="code-wrap"><pre class="code-block">az containerapp create \
-  --name dacarag-chat \
-  --resource-group dacarag-rg \
-  --environment dacarag-env \
-  --image dacaragacr.azurecr.io/dacarag:v1 \
-  --target-port 8501 \
-  --ingress external \
-  --registry-server dacaragacr.azurecr.io \
-  --registry-username &lt;ACR_USERNAME&gt; \
-  --registry-password &lt;ACR_PASSWORD&gt; \
-  --env-vars \
-    MONGO_URI=secretref:mongo-uri \
-    MONGO_DB=trades_quotes \
-    NEO4J_URI=secretref:neo4j-uri \
-    NEO4J_USER=neo4j \
-    NEO4J_PASSWORD=secretref:neo4j-pwd \
-    ANTHROPIC_API_KEY=secretref:anthropic-key \
-  --secrets \
-    mongo-uri=&lt;your_full_mongo_uri&gt; \
-    neo4j-uri=&lt;your_neo4j_uri&gt; \
-    neo4j-pwd=&lt;your_neo4j_password&gt; \
-    anthropic-key=&lt;your_anthropic_key&gt; \
-  --cpu 0.5 --memory 1.0Gi \
-  --min-replicas 0 --max-replicas 1</pre></div>
-        <div class="warn">Use <code>secretref:</code> for sensitive values. Never bake passwords into the image. <code>--min-replicas 0</code> means the container shuts down when idle, saving credit.</div>
-
-        <li class="tickable" data-key="p12_14"><span class="cb"></span><span class="li-text">Get the public URL of your deployed chatbot</span></li>
-        <div class="code-wrap"><pre class="code-block">az containerapp show \
-  --name dacarag-chat \
-  --resource-group dacarag-rg \
-  --query "properties.configuration.ingress.fqdn" \
-  --output tsv</pre></div>
-        <div class="note">Output looks like <code>dacarag-chat.lemonbeach-abc123.northeurope.azurecontainerapps.io</code>. Open it in a browser — your chatbot should load!</div>
-
-        <li class="tickable" data-key="p12_15"><span class="cb"></span><span class="li-text"><strong>Sub-phase D — Watch the logs live</strong> while testing the chatbot</span></li>
-        <div class="code-wrap"><pre class="code-block">az containerapp logs show --name dacarag-chat --resource-group dacarag-rg --follow</pre></div>
-
-        <li class="tickable" data-key="p12_16"><span class="cb"></span><span class="li-text">Visit the URL, ask the chatbot 5 questions, verify it works end-to-end (using your Atlas + AuraDB cloud databases)</span></li>
-
-        <li class="tickable" data-key="p12_17"><span class="cb"></span><span class="li-text"><strong>Sub-phase E — Clean up to save credit.</strong> Stop the app when not using it</span></li>
-        <div class="code-wrap"><pre class="code-block">az containerapp update --name dacarag-chat --resource-group dacarag-rg --min-replicas 0 --max-replicas 0</pre></div>
-
-        <li class="tickable" data-key="p12_18"><span class="cb"></span><span class="li-text">When done experimenting, tear it all down (preserves credit for future projects)</span></li>
-        <div class="code-wrap"><pre class="code-block">az group delete --name dacarag-rg --yes --no-wait</pre></div>
-        <div class="warn">This deletes EVERYTHING in the resource group: the app, the registry, the environment. Use this when you're sure you're done.</div>
-
-        <li class="tickable" data-key="p12_19"><span class="cb"></span><span class="li-text">Document the process — add an <code>azure-deployment.md</code> to your <code>docs/</code> folder summarising what you did. Include screenshots of: Azure portal, the ACR, the running Container App, your live chatbot URL.</span></li>
-
-        <li class="tickable" data-key="p12_20"><span class="cb"></span><span class="li-text">Update your README and LinkedIn — you can now legitimately claim "Deployed Streamlit RAG chatbot to Azure Container Apps via ACR-built Docker image with managed secrets and zero-replica autoscaling"</span></li>
-
-        <li class="tickable" data-key="p12_21"><span class="cb"></span><span class="li-text">Push to GitHub on a new branch so the cloud-deployment work is separate from the CA submission</span></li>
-        <div class="code-wrap"><pre class="code-block">git checkout -b feature/azure-deployment
-git add Dockerfile .dockerignore docs/azure-deployment.md
-git commit -m "Phase 12: Azure Container Apps deployment"
-git push origin feature/azure-deployment</pre></div>
-      </ol>
-
-      <div class="note" style="margin-left:0; margin-top:1.5rem;">
-        <strong style="display:block; margin-bottom:0.4rem;">What you'll have learned by the end of Phase 12:</strong>
-        How to: write a production Dockerfile, build images in the cloud without local Docker, manage container registries, deploy to Container Apps, configure ingress and secrets, watch live logs, scale containers, and tear down resources cleanly. These are real, demonstrable cloud-native skills that show up at interviews.
-      </div>
     </div>
   </section>
 
