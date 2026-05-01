@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DACARag — Project Plan & Daily Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --card: #FDFAF6;
+    --text: #2D2520;
+    --muted: #786558;
+    --border: #E5DDD2;
+    --code-bg: #F5EFE5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    padding: 0 0 4rem 0;
+  }
+  h1, h2, h3 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  /* ----- Sticky header & progress ----- */
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    background: rgba(250, 248, 245, 0.96);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    z-index: 100;
+  }
+  .header-row {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .header-title h1 {
+    font-size: 1.4rem;
+    color: #5A3A28;
+  }
+  .header-title p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.1rem;
+  }
+  .progress-wrap {
+    flex: 1;
+    min-width: 220px;
+    max-width: 360px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+  .progress-bar {
+    height: 8px;
+    background: var(--border);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #D4A0A0 0%, #D4896B 100%);
+    border-radius: 5px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .reset-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--muted);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .reset-btn:hover {
+    background: #FBEAEA;
+    border-color: #D4A0A0;
+    color: #8B4A4A;
+  }
+  /* ----- Container ----- */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  /* ----- Intro card ----- */
+  .intro {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1.6rem 1.8rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border);
+  }
+  .intro h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.6rem;
+    color: #5A3A28;
+  }
+  .intro p {
+    color: var(--muted);
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+  }
+  /* ----- Schedule overview table ----- */
+  .schedule {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1.4rem 1.8rem;
+    margin-bottom: 1.8rem;
+    border: 1px solid var(--border);
+  }
+  .schedule h2 {
+    font-size: 1.15rem;
+    margin-bottom: 0.9rem;
+    color: #5A3A28;
+  }
+  .schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+  .schedule-table th, .schedule-table td {
+    text-align: left;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .schedule-table th {
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+  .schedule-table td:first-child {
+    font-weight: 600;
+    width: 70px;
+  }
+  .schedule-table tr:last-child td { border-bottom: none; }
+  .day-badge {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+  }
+  /* ----- Phase cards (collapsible) ----- */
+  .phase {
+    background: var(--card);
+    border-radius: 12px;
+    margin-bottom: 1.1rem;
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--c);
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .phase:hover {
+    box-shadow: 0 2px 14px rgba(0,0,0,0.04);
+  }
+  .phase-header {
+    background: var(--c-light);
+    padding: 1.1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    transition: background 0.18s;
+    user-select: none;
+  }
+  .phase-header:hover { filter: brightness(0.98); }
+  .phase-title-block {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .phase-num {
+    background: var(--c);
+    color: white;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    font-family: 'Playfair Display', serif;
+  }
+  .phase-meta { min-width: 0; flex: 1; }
+  .phase-meta h3 {
+    font-size: 1.1rem;
+    color: var(--c-dark);
+    margin-bottom: 0.15rem;
+  }
+  .phase-meta .day {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .phase-counter {
+    background: white;
+    padding: 0.3rem 0.7rem;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-dark);
+    border: 1.5px solid var(--c-mid);
+    flex-shrink: 0;
+  }
+  .phase-counter.complete {
+    background: var(--c);
+    color: white;
+    border-color: var(--c);
+  }
+  .chevron {
+    color: var(--c-dark);
+    font-size: 0.9rem;
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+  .phase.open .chevron { transform: rotate(180deg); }
+  .phase-body {
+    display: none;
+    padding: 1.4rem 1.6rem;
+  }
+  .phase.open .phase-body { display: block; }
+  /* ----- Why box ----- */
+  .why {
+    background: var(--c-light);
+    border-left: 3px solid var(--c-mid);
+    padding: 0.8rem 1rem;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 1.2rem;
+    font-size: 0.88rem;
+    color: var(--c-dark);
+  }
+  .why strong {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    margin-right: 0.3rem;
+  }
+  /* ----- Tickable steps ----- */
+  ol.steps {
+    list-style: none;
+    counter-reset: step;
+    margin: 0;
+    padding: 0;
+  }
+  .tickable {
+    cursor: pointer;
+    user-select: none;
+    padding: 0.55rem 0.7rem 0.55rem 0.5rem;
+    margin-bottom: 0.2rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    transition: background 0.15s;
+    font-size: 0.93rem;
+  }
+  .tickable:hover { background: rgba(0,0,0,0.025); }
+  .tickable.done { opacity: 0.5; }
+  .tickable.done .li-text { text-decoration: line-through; text-decoration-color: var(--muted); }
+  .cb {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--c-mid);
+    background: white;
+    margin-top: 2px;
+    transition: all 0.18s;
+    pointer-events: none;
+  }
+  .tickable.done .cb { background: var(--c); border-color: var(--c); }
+  .tickable.done .cb::after {
+    content: '';
+    width: 5px;
+    height: 9px;
+    border: 2px solid white;
+    border-top: none;
+    border-left: none;
+    transform: rotate(40deg) translate(-1px,-1px);
+    display: block;
+  }
+  .li-text { flex: 1; }
+  .li-text code {
+    background: var(--code-bg);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+  }
+  /* ----- Code blocks ----- */
+  .code-wrap {
+    position: relative;
+    margin: 0.6rem 0 0.8rem 2rem;
+  }
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.7rem 0.9rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.83rem;
+    overflow-x: auto;
+    white-space: pre;
+    color: #3A2820;
+    line-height: 1.45;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 0.2rem 0.6rem;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--muted);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.18s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .code-wrap:hover .copy-btn { opacity: 1; pointer-events: auto; }
+  .copy-btn.copied {
+    background: #EEF6F1;
+    color: #3A6850;
+    border-color: #96C0A8;
+  }
+  /* ----- Note & warning boxes ----- */
+  .note, .warn {
+    margin: 0.7rem 0 0.7rem 2rem;
+    padding: 0.7rem 0.95rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+  .note {
+    background: #EEF6F1;
+    border-left: 3px solid #96C0A8;
+    color: #3A6850;
+  }
+  .warn {
+    background: #FCEEE8;
+    border-left: 3px solid #D4896B;
+    color: #8B4A2E;
+  }
+  /* ----- Completion banner ----- */
+  .complete-banner {
+    display: none;
+    background: linear-gradient(135deg, #D4A0A0 0%, #D4896B 100%);
+    color: white;
+    padding: 1.5rem 1.8rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  .complete-banner.show { display: block; }
+  .complete-banner h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+    color: white;
+  }
+  /* ----- Mobile ----- */
+  @media (max-width: 600px) {
+    .container { padding: 1rem; }
+    .header-row { flex-direction: column; align-items: stretch; }
+    .progress-wrap { max-width: none; }
+    .phase-header { padding: 0.9rem 1rem; }
+    .phase-body { padding: 1.1rem 1rem; }
+    .code-wrap, .note, .warn { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sticky-header">
+  <div class="header-row">
+    <div class="header-title">
+      <h1>DACARag — Project Plan</h1>
+      <p>Two-week sprint • ~2 hours per day • due 6 May 2026</p>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="progressText">0 / 0 steps</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+    <button class="reset-btn" id="resetBtn">Reset progress</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="complete-banner" id="completeBanner">
+    <h2>You did it!</h2>
+    <p>All phases complete. Time to submit and celebrate.</p>
+  </div>
+
+  <div class="intro">
+    <h2>What you're building</h2>
+    <p>A hybrid RAG chatbot that helps Irish trades (plumbers, carpenters, electricians) handle incoming customer quote-request emails. The system reads the email, looks up whether the customer is known, finds similar past jobs, suggests likely materials, and drafts a quote — all grounded in your MongoDB + Neo4j + vector store data.</p>
+    <p>Each phase below is one focused 2-hour session. Open the phase, work through the steps, tick them off as you go. Your progress saves automatically in this browser.</p>
+  </div>
+
+  <div class="schedule">
+    <h2>Daily schedule at a glance</h2>
+    <table class="schedule-table">
+      <thead>
+        <tr><th>Date</th><th>Day</th><th>Phase</th><th>Time</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>25 Apr</td><td>Sat (today)</td><td><span class="day-badge" style="background:#E8D5B7"></span>Phase 0 — Setup &amp; Data</td><td>~2h</td></tr>
+        <tr><td>26 Apr</td><td>Sun</td><td><span class="day-badge" style="background:#D4A0A0"></span>Phase 1 — MongoDB Ingestion</td><td>~2h</td></tr>
+        <tr><td>27 Apr</td><td>Mon</td><td><span class="day-badge" style="background:#A8B89F"></span>Phase 2 — Neo4j AuraDB</td><td>~2h</td></tr>
+        <tr><td>28 Apr</td><td>Tue</td><td><span class="day-badge" style="background:#C0A8D4"></span>Phase 3 — LLM Entity Extraction</td><td>~2h</td></tr>
+        <tr><td>29 Apr</td><td>Wed</td><td><span class="day-badge" style="background:#D4896B"></span>Phase 4 — Vector Embeddings</td><td>~2h</td></tr>
+        <tr><td>30 Apr</td><td>Thu</td><td><span class="day-badge" style="background:#C9A57B"></span>Phase 5 — Retrieval Orchestration</td><td>~2h</td></tr>
+        <tr><td>1 May</td><td>Fri</td><td><span class="day-badge" style="background:#A8B5C9"></span>Phase 6 — Streamlit Chatbot</td><td>~2h</td></tr>
+        <tr><td>2 May</td><td>Sat</td><td><span class="day-badge" style="background:#E8C5C5"></span>Phase 7 — BI Dashboard + Eval Set</td><td>~2h</td></tr>
+        <tr><td>3 May</td><td>Sun</td><td><span class="day-badge" style="background:#B8A48F"></span>Phase 8 — Evaluation Runs</td><td>~2h</td></tr>
+        <tr><td>4 May</td><td>Mon</td><td><span class="day-badge" style="background:#C9B47B"></span>Phase 9 — Report Writing</td><td>~2h</td></tr>
+        <tr><td>5 May</td><td>Tue</td><td><span class="day-badge" style="background:#B87555"></span>Phase 10 — Slides &amp; Polish</td><td>~2h</td></tr>
+        <tr><td>6 May</td><td>Wed</td><td><span class="day-badge" style="background:#A85A3A"></span>Phase 11 — Submit &amp; Present</td><td>varies</td></tr>
+        <tr><td>post-CA</td><td>weekend</td><td><span class="day-badge" style="background:#0078D4"></span>Phase 12 — Cloud Docker on Azure (optional)</td><td>~6-8h</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== PHASE 0 ===== -->
+  <section class="phase" id="p0" style="--c:#C9A57B; --c-light:#F2E6D0; --c-mid:#D4B58A; --c-dark:#5A3A1A;">
+    <div class="phase-header" data-toggle="p0">
+      <div class="phase-title-block">
+        <div class="phase-num">0</div>
+        <div class="phase-meta">
+          <h3>Setup &amp; Data Generation</h3>
+          <div class="day">Saturday 25 April • ~2h • warm sand</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p0">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>The whole project rests on this foundation. Get the folder layout, version control, and reproducible synthetic dataset right today so every later phase builds on solid ground.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p0_01"><span class="cb"></span><span class="li-text">Open PowerShell, go to <code>F:\Apps</code></span></li>
+        <div class="code-wrap"><pre class="code-block">cd F:\Apps</pre></div>
+
+        <li class="tickable" data-key="p0_02"><span class="cb"></span><span class="li-text">Create the project folder and enter it</span></li>
+        <div class="code-wrap"><pre class="code-block">mkdir DACARag
+cd DACARag</pre></div>
+
+        <li class="tickable" data-key="p0_03"><span class="cb"></span><span class="li-text">Create the folder structure</span></li>
+        <div class="code-wrap"><pre class="code-block">mkdir data, ingest, retrieve, app, eval, docs, notebooks
+mkdir neo4j\data, neo4j\logs, neo4j\import</pre></div>
+
+        <li class="tickable" data-key="p0_04"><span class="cb"></span><span class="li-text">Initialize git repository</span></li>
+        <div class="code-wrap"><pre class="code-block">git init
+git branch -M main</pre></div>
+
+        <li class="tickable" data-key="p0_05"><span class="cb"></span><span class="li-text">Move <code>generate_trades_dataset.py</code> from Downloads into <code>ingest\</code></span></li>
+        <div class="code-wrap"><pre class="code-block">copy "$env:USERPROFILE\Downloads\generate_trades_dataset.py" ingest\</pre></div>
+
+        <li class="tickable" data-key="p0_06"><span class="cb"></span><span class="li-text">Create <code>.gitignore</code> in the root with this content</span></li>
+        <div class="code-wrap"><pre class="code-block">.env
+*.key
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.pytest_cache/
+neo4j/data/
+neo4j/logs/
+neo4j/import/
+.ipynb_checkpoints/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+*.log</pre></div>
+
+        <li class="tickable" data-key="p0_07"><span class="cb"></span><span class="li-text">Create <code>requirements.txt</code> with the project dependencies</span></li>
+        <div class="code-wrap"><pre class="code-block">pymongo&gt;=4.6
+neo4j&gt;=5.20
+anthropic&gt;=0.40
+sentence-transformers&gt;=3.0
+pandas&gt;=2.2
+plotly&gt;=5.20
+streamlit&gt;=1.35
+ragas==0.2.10
+rank-bm25&gt;=0.2.2
+python-dotenv&gt;=1.0
+tqdm&gt;=4.66</pre></div>
+
+        <li class="tickable" data-key="p0_08"><span class="cb"></span><span class="li-text">Create <code>.env.example</code> as a template</span></li>
+        <div class="code-wrap"><pre class="code-block">MONGO_URI=mongodb+srv://&lt;user&gt;:&lt;pass&gt;@&lt;cluster&gt;.mongodb.net/?retryWrites=true&amp;w=majority
+MONGO_DB=trades_quotes
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=tradeschangeme
+ANTHROPIC_API_KEY=sk-ant-...
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2</pre></div>
+
+        <li class="tickable" data-key="p0_09"><span class="cb"></span><span class="li-text">Copy <code>.env.example</code> to <code>.env</code> and fill in your real Mongo URI, Neo4j password, and Anthropic key</span></li>
+        <div class="code-wrap"><pre class="code-block">copy .env.example .env
+notepad .env</pre></div>
+
+        <li class="tickable" data-key="p0_10"><span class="cb"></span><span class="li-text">Create <code>docker-compose.yml</code> for the local Neo4j container</span></li>
+        <div class="code-wrap"><pre class="code-block">services:
+  neo4j:
+    image: neo4j:5.20-community
+    container_name: trades-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/tradeschangeme
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - ./neo4j/data:/data
+      - ./neo4j/logs:/logs
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7474"]
+      interval: 10s
+      retries: 5</pre></div>
+
+        <li class="tickable" data-key="p0_11"><span class="cb"></span><span class="li-text">Create a basic <code>README.md</code> describing the project</span></li>
+
+        <li class="tickable" data-key="p0_12"><span class="cb"></span><span class="li-text">Run the synthetic data generator</span></li>
+        <div class="code-wrap"><pre class="code-block">&amp; "C:\Users\Kasia\AppData\Local\Python\bin\python.exe" ingest\generate_trades_dataset.py</pre></div>
+
+        <li class="tickable" data-key="p0_13"><span class="cb"></span><span class="li-text">Verify the output — should see 7 CSVs and 100 .eml files</span></li>
+        <div class="code-wrap"><pre class="code-block">dir data
+dir data\emails | Measure-Object</pre></div>
+
+        <li class="tickable" data-key="p0_14"><span class="cb"></span><span class="li-text">Spot-check by opening <code>data\customers.csv</code> in Excel and <code>data\emails\msg_0001.eml</code> in Notepad</span></li>
+
+        <li class="tickable" data-key="p0_15"><span class="cb"></span><span class="li-text">Make your first commit</span></li>
+        <div class="code-wrap"><pre class="code-block">git add .
+git commit -m "Phase 0: scaffold + Docker compose + synthetic data"
+git tag v0.0-scaffold</pre></div>
+
+        <li class="tickable" data-key="p0_16"><span class="cb"></span><span class="li-text">Create a new GitHub repo at <code>github.com/Kay79SL/RAG-Trades-Quotes</code> (or DACARag), then push</span></li>
+        <div class="code-wrap"><pre class="code-block">git remote add origin https://github.com/Kay79SL/RAG-Trades-Quotes.git
+git push -u origin main
+git push origin v0.0-scaffold</pre></div>
+        <div class="warn">GitHub now requires a Personal Access Token (PAT), not your account password. Generate one at github.com → Settings → Developer settings → Personal access tokens.</div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 1 ===== -->
+  <section class="phase" id="p1" style="--c:#D4A0A0; --c-light:#FBEAEA; --c-mid:#E0B5B5; --c-dark:#7A3838;">
+    <div class="phase-header" data-toggle="p1">
+      <div class="phase-title-block">
+        <div class="phase-num">1</div>
+        <div class="phase-meta">
+          <h3>MongoDB Ingestion</h3>
+          <div class="day">Sunday 26 April • ~2h • dusty rose</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p1">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>MongoDB is your system of record. CSVs become collections, .eml files go into GridFS for binary storage. Get this layer right and every retrieval downstream has clean data to work from.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p1_01"><span class="cb"></span><span class="li-text">Activate the Python virtual environment (create one if you haven't)</span></li>
+        <div class="code-wrap"><pre class="code-block">cd F:\Apps\DACARag
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt</pre></div>
+
+        <li class="tickable" data-key="p1_02"><span class="cb"></span><span class="li-text">Verify your Atlas connection works with a quick ping</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "from pymongo import MongoClient; from dotenv import load_dotenv; import os; load_dotenv(); c=MongoClient(os.getenv('MONGO_URI')); print(c.admin.command('ping'))"</pre></div>
+
+        <li class="tickable" data-key="p1_03"><span class="cb"></span><span class="li-text">Ask Claude to write <code>ingest\load_mongo.py</code> — it should load all 7 CSVs into named collections and the 100 .eml files into a GridFS bucket called <code>email_files</code></span></li>
+
+        <li class="tickable" data-key="p1_04"><span class="cb"></span><span class="li-text">Run the loader</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\load_mongo.py</pre></div>
+
+        <li class="tickable" data-key="p1_05"><span class="cb"></span><span class="li-text">Open MongoDB Atlas in the browser and verify 7 collections appear (customers, job_types, items, job_items, invoices, invoice_items, emails) plus the <code>email_files.files</code> and <code>email_files.chunks</code> GridFS buckets</span></li>
+
+        <li class="tickable" data-key="p1_06"><span class="cb"></span><span class="li-text">Spot-check counts and a sample document</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "from pymongo import MongoClient; from dotenv import load_dotenv; import os, json; load_dotenv(); db=MongoClient(os.getenv('MONGO_URI'))[os.getenv('MONGO_DB')]; print({c: db[c].count_documents({}) for c in db.list_collection_names()})"</pre></div>
+
+        <li class="tickable" data-key="p1_07"><span class="cb"></span><span class="li-text">Create indexes on key fields for faster lookups</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "from pymongo import MongoClient, ASCENDING; from dotenv import load_dotenv; import os; load_dotenv(); db=MongoClient(os.getenv('MONGO_URI'))[os.getenv('MONGO_DB')]; db.invoices.create_index([('customer_id',1)]); db.invoices.create_index([('trade',1)]); db.invoices.create_index([('invoice_date',-1)]); db.emails.create_index([('trade_contacted',1)]); db.emails.create_index([('from_email',1)]); print('indexes created')"</pre></div>
+
+        <li class="tickable" data-key="p1_08"><span class="cb"></span><span class="li-text">Commit and tag</span></li>
+        <div class="code-wrap"><pre class="code-block">git add ingest\load_mongo.py
+git commit -m "Phase 1: MongoDB ingestion + indexes"
+git push
+git tag v0.1-mongo
+git push --tags</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 2 ===== -->
+  <section class="phase" id="p2" style="--c:#A8B89F; --c-light:#E8EEE3; --c-mid:#BBC8B0; --c-dark:#3F5235;">
+    <div class="phase-header" data-toggle="p2">
+      <div class="phase-title-block">
+        <div class="phase-num">2</div>
+        <div class="phase-meta">
+          <h3>Neo4j AuraDB (Cloud)</h3>
+          <div class="day">Monday 27 April • ~2h • sage</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p2">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>AuraDB Free is Neo4j's managed cloud service — same as MongoDB Atlas but for Neo4j. Both databases live in the cloud, no local install, no admin rights needed. Cleaner architecture story for the report. (Cloud Docker on Azure is now Phase 12, post-submission.)</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p2_01"><span class="cb"></span><span class="li-text">Open <code>https://console.neo4j.io/</code> in your browser, sign in with Google</span></li>
+
+        <li class="tickable" data-key="p2_02"><span class="cb"></span><span class="li-text">Click <strong>Create Instance</strong> → <strong>AuraDB Free</strong>. Name: <code>dacarag</code>. Region: <strong>Europe (Ireland)</strong></span></li>
+
+        <li class="tickable" data-key="p2_03"><span class="cb"></span><span class="li-text"><strong>CRITICAL</strong>: When the credentials modal appears, click <strong>Download</strong> to save the .txt file BEFORE clicking Continue. The password is shown ONCE.</span></li>
+        <div class="warn">Save the credentials file to a safe location (e.g. F:\Apps\DACARag\docs\aura_credentials.txt — but make sure docs/ is gitignored if you keep it there). If you lose the password, you have to delete the instance and start over.</div>
+
+        <li class="tickable" data-key="p2_04"><span class="cb"></span><span class="li-text">Wait 2-3 minutes for instance status to change from "Creating..." to "Running"</span></li>
+
+        <li class="tickable" data-key="p2_05"><span class="cb"></span><span class="li-text">Update <code>.env</code> with the three values from your credentials file</span></li>
+        <div class="code-wrap"><pre class="code-block">notepad .env</pre></div>
+        <div class="code-wrap"><pre class="code-block">NEO4J_URI=neo4j+s://abc12345.databases.neo4j.io
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=&lt;your_auto_generated_password&gt;</pre></div>
+
+        <li class="tickable" data-key="p2_06"><span class="cb"></span><span class="li-text">Test the connection</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "from neo4j import GraphDatabase; from dotenv import load_dotenv; import os; load_dotenv(); d=GraphDatabase.driver(os.getenv('NEO4J_URI'), auth=(os.getenv('NEO4J_USER'), os.getenv('NEO4J_PASSWORD'))); d.verify_connectivity(); print('connected'); d.close()"</pre></div>
+        <div class="note">Want to see: <code>connected</code>. If you see an auth error, double-check the password — pasted with a leading/trailing space is the most common mistake.</div>
+
+        <li class="tickable" data-key="p2_07"><span class="cb"></span><span class="li-text">Ask Claude to write <code>ingest\load_neo4j.py</code> — reads from MongoDB and creates nodes (Customer, Trade, JobType, Item, Invoice, Email) and relationships (REQUESTED, QUOTED_FOR, CONTAINS, NEEDS_ITEM, BELONGS_TO, SENT_BY)</span></li>
+
+        <li class="tickable" data-key="p2_08"><span class="cb"></span><span class="li-text">Run the graph loader</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\load_neo4j.py</pre></div>
+
+        <li class="tickable" data-key="p2_09"><span class="cb"></span><span class="li-text">Open Neo4j Browser from the AuraDB console (click <strong>Open</strong> on your instance), enter your password</span></li>
+
+        <li class="tickable" data-key="p2_10"><span class="cb"></span><span class="li-text">Verify node and relationship counts via Cypher</span></li>
+        <div class="code-wrap"><pre class="code-block">MATCH (n) RETURN labels(n) AS label, count(*) AS count ORDER BY count DESC;
+MATCH ()-[r]->() RETURN type(r) AS rel, count(*) AS count ORDER BY count DESC;</pre></div>
+
+        <li class="tickable" data-key="p2_11"><span class="cb"></span><span class="li-text">Visualize a sample subgraph</span></li>
+        <div class="code-wrap"><pre class="code-block">MATCH (c:Customer)-[:REQUESTED]-&gt;(j:JobType)&lt;-[:CONTAINS]-(i:Invoice)
+RETURN c, j, i LIMIT 25;</pre></div>
+
+        <li class="tickable" data-key="p2_12"><span class="cb"></span><span class="li-text">Take a screenshot of the graph for the report's "implementation" section, save to <code>docs\neo4j_sample.png</code></span></li>
+
+        <li class="tickable" data-key="p2_13"><span class="cb"></span><span class="li-text">Commit, tag, push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add ingest\load_neo4j.py
+git commit -m "Phase 2: Neo4j AuraDB + graph build"
+git tag v0.2-neo4j
+git push --tags</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 3 (EXPANDED) ===== -->
+  <section class="phase" id="p3" style="--c:#C0A8D4; --c-light:#EFE7F4; --c-mid:#CFB9E0; --c-dark:#553F70;">
+    <div class="phase-header" data-toggle="p3">
+      <div class="phase-title-block">
+        <div class="phase-num">3</div>
+        <div class="phase-meta">
+          <h3>Multi-source Ingestion &amp; LLM Enrichment</h3>
+          <div class="day">Tuesday 28 — Wednesday 29 April • ~4h • soft plum</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p3">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>Two input streams converge here: unstructured email prose (LLM-extracted into structured fields) and semi-structured purchase orders (Excel-parsed plus LLM-analysed). Both flow into all three stores — Mongo, GridFS, and Neo4j — so the chatbot's <em>pricing intelligence layer</em> can later cross-reference customer history (invoices), current quotes (POs), and canonical recipes (graph) when predicting a quote for an incoming request.</div>
+
+      <h4 style="font-family:'Playfair Display',serif;color:#553F70;margin:1.2rem 0 0.4rem;font-size:1.1rem;">3A — Email entity extraction</h4>
+
+      <ol class="steps">
+        <li class="tickable" data-key="p3_01"><span class="cb"></span><span class="li-text">Verify <code>ANTHROPIC_API_KEY</code> is set in <code>.env</code> and works</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "from anthropic import Anthropic; from dotenv import load_dotenv; load_dotenv(); c=Anthropic(); print(c.messages.create(model='claude-haiku-4-5-20251001', max_tokens=20, messages=[{'role':'user','content':'say hello'}]).content[0].text)"</pre></div>
+
+        <li class="tickable" data-key="p3_02"><span class="cb"></span><span class="li-text">Save <code>ingest\extract_entities.py</code> to your project (extracts trade_needed, job_type_id, mentioned_items, urgency, is_returning_customer, matched_customer_id, confidence, key_phrases per email)</span></li>
+
+        <li class="tickable" data-key="p3_03"><span class="cb"></span><span class="li-text">Dry-run to inspect the prompt before spending API credit</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\extract_entities.py --dry-run</pre></div>
+
+        <li class="tickable" data-key="p3_04"><span class="cb"></span><span class="li-text">Test on 5 emails first, verify quality</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\extract_entities.py --limit 5</pre></div>
+
+        <li class="tickable" data-key="p3_05"><span class="cb"></span><span class="li-text">Run the full extraction across all 100 emails (~5min, ~€0.10 cost)</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\extract_entities.py</pre></div>
+
+        <li class="tickable" data-key="p3_06"><span class="cb"></span><span class="li-text">Spot-check distribution and quality</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "from pymongo import MongoClient; from dotenv import load_dotenv; import os, json; load_dotenv(); db=MongoClient(os.getenv('MONGO_URI'))[os.getenv('MONGO_DB')]; [print(json.dumps(e['extracted'], indent=2, default=str)) for e in db.emails.aggregate([{'$sample':{'size':3}}])]"</pre></div>
+
+        <li class="tickable" data-key="p3_07"><span class="cb"></span><span class="li-text">Add new graph edges from extractions: <code>(Email)-[:ABOUT_JOB]-&gt;(JobType)</code> and <code>(Email)-[:MENTIONS_ITEM]-&gt;(Item)</code></span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\link_email_extractions_to_graph.py</pre></div>
+      </ol>
+
+      <h4 style="font-family:'Playfair Display',serif;color:#553F70;margin:1.5rem 0 0.4rem;font-size:1.1rem;">3B — Purchase Order ingestion (Excel → MongoDB → GridFS)</h4>
+
+      <ol class="steps">
+        <li class="tickable" data-key="p3_08"><span class="cb"></span><span class="li-text">Save the 15 PDFs to <code>data\purchase_orders\</code> (one per PO sheet, named with the PO number)</span></li>
+
+        <li class="tickable" data-key="p3_09"><span class="cb"></span><span class="li-text">Save <code>ingest\extract_pos.py</code> to your project (parses Excel sheets, runs LLM enrichment, saves to <code>pos</code> collection)</span></li>
+
+        <li class="tickable" data-key="p3_10"><span class="cb"></span><span class="li-text">Run the parser + LLM enricher (~30 sec, ~€0.02 cost)</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\extract_pos.py</pre></div>
+        <div class="note">Verify in Atlas Data Explorer: new collection <code>pos</code> with 15 documents, each with structured fields plus <code>extracted</code> sub-document.</div>
+
+        <li class="tickable" data-key="p3_11"><span class="cb"></span><span class="li-text">Save <code>ingest\load_po_pdfs.py</code> and run it — stores all 15 PDF binaries in GridFS bucket <code>po_files</code></span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\load_po_pdfs.py</pre></div>
+        <div class="note">Mirrors the .eml → email_files pattern. Each PDF retrievable later by po_number.</div>
+
+        <li class="tickable" data-key="p3_12"><span class="cb"></span><span class="li-text">Verify referential integrity: every PO has a matched_customer_id and a matched_job_type_id</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "from pymongo import MongoClient; from dotenv import load_dotenv; import os; load_dotenv(); db=MongoClient(os.getenv('MONGO_URI'))[os.getenv('MONGO_DB')]; print('POs with customer:', db.pos.count_documents({'matched_customer_id':{'$ne':None}}), '/15'); print('POs with job_type:', db.pos.count_documents({'matched_job_type_id':{'$ne':None}}), '/15')"</pre></div>
+      </ol>
+
+      <h4 style="font-family:'Playfair Display',serif;color:#553F70;margin:1.5rem 0 0.4rem;font-size:1.1rem;">3C — POs into Neo4j graph</h4>
+
+      <ol class="steps">
+        <li class="tickable" data-key="p3_13"><span class="cb"></span><span class="li-text">Save <code>ingest\load_pos_to_neo4j.py</code> and run it — creates PO nodes and 3 new relationship types</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\load_pos_to_neo4j.py</pre></div>
+        <div class="note">Adds: <code>(PO)-[:FOR_CUSTOMER]-&gt;(Customer)</code>, <code>(PO)-[:FOR_JOB]-&gt;(JobType)</code>, <code>(PO)-[:CONTAINS_ITEM]-&gt;(Item)</code>. The graph now has both backward-looking history (Invoices) and forward-looking quotes (POs) for the same customer/job/item entities.</div>
+
+        <li class="tickable" data-key="p3_14"><span class="cb"></span><span class="li-text">In Neo4j Browser, verify the graph with both invoices and POs visible for one customer</span></li>
+        <div class="code-wrap"><pre class="code-block">MATCH (c:Customer {first_name:'Gerard'})&lt;-[:FOR_CUSTOMER]-(i:Invoice)
+OPTIONAL MATCH (c)&lt;-[:FOR_CUSTOMER]-(po:PO)
+RETURN c, i, po LIMIT 25;</pre></div>
+
+        <li class="tickable" data-key="p3_15"><span class="cb"></span><span class="li-text">Take a screenshot of the combined graph view for the report — save to <code>docs\neo4j_with_pos.png</code></span></li>
+
+        <li class="tickable" data-key="p3_16"><span class="cb"></span><span class="li-text">Run a smoke test of the pricing-intelligence query (this previews Phase 5)</span></li>
+        <div class="code-wrap"><pre class="code-block">// All historical pricing for boiler installation
+MATCH (j:JobType {job_name:'Boiler installation'})
+OPTIONAL MATCH (j)&lt;-[:FOR_JOB]-(i:Invoice)
+OPTIONAL MATCH (j)&lt;-[:FOR_JOB]-(po:PO)
+RETURN j.job_name AS job,
+       count(DISTINCT i)        AS past_invoices,
+       avg(i.labour_cost_ex_vat) AS avg_labour,
+       count(DISTINCT po)       AS pending_pos,
+       avg(po.subtotal_ex_vat)  AS avg_po_value;</pre></div>
+
+        <li class="tickable" data-key="p3_17"><span class="cb"></span><span class="li-text">Commit, tag, push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add .
+git commit -m "Phase 3: email extraction + PO ingestion to Mongo/GridFS/Neo4j"
+git tag v0.3-multi-source
+git push --tags</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 4 ===== -->
+  <section class="phase" id="p4" style="--c:#D4896B; --c-light:#FBE5DA; --c-mid:#E0A38A; --c-dark:#7A3F22;">
+    <div class="phase-header" data-toggle="p4">
+      <div class="phase-title-block">
+        <div class="phase-num">4</div>
+        <div class="phase-meta">
+          <h3>Vector Embeddings &amp; Atlas Search</h3>
+          <div class="day">Wednesday 29 April • ~2h • terracotta</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p4">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>Vector search handles semantic paraphrase ("damp patch on ceiling" → "leaking pipe") that keyword search would miss entirely. Atlas Vector Search means no separate vector DB — same Mongo cluster, one less moving part.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p4_01"><span class="cb"></span><span class="li-text">Ask Claude to write <code>ingest\embed_chunks.py</code> — for each email body, job_type description, and item name, generate a 384-dim vector with sentence-transformers and store in a <code>chunks</code> collection</span></li>
+
+        <li class="tickable" data-key="p4_02"><span class="cb"></span><span class="li-text">Run the embedder</span></li>
+        <div class="code-wrap"><pre class="code-block">python ingest\embed_chunks.py</pre></div>
+        <div class="note">First run downloads the model (~80MB) and is slow. Subsequent runs use the cached model.</div>
+
+        <li class="tickable" data-key="p4_03"><span class="cb"></span><span class="li-text">In Atlas: navigate to your cluster → Atlas Search → Create Index → JSON Editor</span></li>
+
+        <li class="tickable" data-key="p4_04"><span class="cb"></span><span class="li-text">Paste this index definition (collection: <code>chunks</code>, name: <code>vector_index</code>)</span></li>
+        <div class="code-wrap"><pre class="code-block">{
+  "fields": [
+    {
+      "type": "vector",
+      "path": "embedding",
+      "numDimensions": 384,
+      "similarity": "cosine"
+    },
+    { "type": "filter", "path": "chunk_type" },
+    { "type": "filter", "path": "trade" }
+  ]
+}</pre></div>
+
+        <li class="tickable" data-key="p4_05"><span class="cb"></span><span class="li-text">Wait for the index status to turn "Active" (typically 5–10 minutes)</span></li>
+
+        <li class="tickable" data-key="p4_06"><span class="cb"></span><span class="li-text">Test similarity search with a sample query</span></li>
+        <div class="code-wrap"><pre class="code-block">python -c "import retrieve.vector_search as v; [print(r) for r in v.search('boiler keeps losing pressure', k=5)]"</pre></div>
+
+        <li class="tickable" data-key="p4_07"><span class="cb"></span><span class="li-text">Commit, tag, push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add .
+git commit -m "Phase 4: vector embeddings + Atlas Vector Search"
+git tag v0.3-vectors
+git push --tags</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 5 ===== -->
+  <section class="phase" id="p5" style="--c:#C9A57B; --c-light:#F2E6D0; --c-mid:#D4B58A; --c-dark:#5A3A1A;">
+    <div class="phase-header" data-toggle="p5">
+      <div class="phase-title-block">
+        <div class="phase-num">5</div>
+        <div class="phase-meta">
+          <h3>Retrieval Orchestration</h3>
+          <div class="day">Thursday 30 April • ~2h • camel</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p5">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>The query router is what makes a hybrid RAG smarter than a plain vector RAG. It decides per question whether to use vector search, graph traversal, or exact lookup — and combines results before the LLM sees them.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p5_01"><span class="cb"></span><span class="li-text">Create <code>retrieve\router.py</code> — classify query intent: <em>semantic</em>, <em>relational</em>, <em>exact_lookup</em>, or <em>predict_quote</em></span></li>
+
+        <li class="tickable" data-key="p5_02"><span class="cb"></span><span class="li-text">Create <code>retrieve\vector_search.py</code> — top-k cosine similarity from Atlas Vector Search</span></li>
+
+        <li class="tickable" data-key="p5_03"><span class="cb"></span><span class="li-text">Create <code>retrieve\graph_search.py</code> — three Cypher templates: customer history, similar past jobs, multi-hop supplier paths</span></li>
+
+        <li class="tickable" data-key="p5_04"><span class="cb"></span><span class="li-text">Create <code>retrieve\mongo_lookup.py</code> — fetch full documents by id or filter</span></li>
+
+        <li class="tickable" data-key="p5_pp"><span class="cb"></span><span class="li-text"><strong>NEW</strong>: Create <code>retrieve\predict_quote.py</code> — the pricing intelligence layer. For a given <code>job_type_id</code>, aggregates labour cost statistics from past invoices (Mongo), pulls typical materials with quantities and unit prices from Neo4j (<code>USES_ITEM</code> edges), cross-checks against POs for the same job_type, and returns a structured quote prediction with confidence and basis.</span></li>
+        <div class="code-wrap"><pre class="code-block">{
+  "job_type_id": "pl_01",
+  "job_name": "Boiler installation",
+  "predicted_labour_eur": 450,
+  "labour_range_eur": [400, 520],
+  "predicted_materials_eur": 1262,
+  "typical_materials": [
+    {"item_id": "it_pl_009", "name": "Gas boiler 24kW", "qty": 1, "price": 1100},
+    {"item_id": "it_pl_026", "name": "Boiler flue kit", "qty": 1, "price": 85},
+    ...
+  ],
+  "predicted_total_ex_vat": 1712,
+  "predicted_total_inc_vat": 2106,
+  "confidence": "high",
+  "based_on": {"past_invoices": 8, "pos": 1, "median_or_avg": "median"}
+}</pre></code></div>
+        <div class="note">This is the killer feature — it uses ALL THREE storage stores in one query path: Mongo for historical statistics, Neo4j for canonical recipes, and POs for current market quotes. Demonstrates polyglot persistence in action.</div>
+
+        <li class="tickable" data-key="p5_05"><span class="cb"></span><span class="li-text">Create <code>retrieve\context_assembler.py</code> — merge results from all three paths, dedupe, rank, build LLM prompt</span></li>
+
+        <li class="tickable" data-key="p5_06"><span class="cb"></span><span class="li-text">Test each route independently with one query each</span></li>
+        <div class="code-wrap"><pre class="code-block">python -m retrieve.vector_search "lights flickering kitchen"
+python -m retrieve.graph_search "What did Sean Murphy have done last?"
+python -m retrieve.mongo_lookup "INV-2025-0001"</pre></div>
+
+        <li class="tickable" data-key="p5_07"><span class="cb"></span><span class="li-text">Commit and push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add retrieve/
+git commit -m "Phase 5: query router + 3 retrieval paths + context assembler"
+git push</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 6 ===== -->
+  <section class="phase" id="p6" style="--c:#A8B5C9; --c-light:#E5EBF2; --c-mid:#BCC8D8; --c-dark:#3F4F66;">
+    <div class="phase-header" data-toggle="p6">
+      <div class="phase-title-block">
+        <div class="phase-num">6</div>
+        <div class="phase-meta">
+          <h3>Streamlit Chatbot</h3>
+          <div class="day">Friday 1 May • ~2h • dusty blue</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p6">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>This is what the marker sees in the demo. The 8% presentation grade depends on how polished and responsive this UI feels. A working sources panel proves your retrieval is grounded — not hallucinated.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p6_01"><span class="cb"></span><span class="li-text">Create <code>app\streamlit_app.py</code> — chat layout with <code>st.chat_message</code> and <code>st.chat_input</code></span></li>
+
+        <li class="tickable" data-key="p6_02"><span class="cb"></span><span class="li-text">Run the app</span></li>
+        <div class="code-wrap"><pre class="code-block">streamlit run app\streamlit_app.py</pre></div>
+
+        <li class="tickable" data-key="p6_03"><span class="cb"></span><span class="li-text">Wire up: user message → router → retrieval → Claude API → streaming response</span></li>
+
+        <li class="tickable" data-key="p6_04"><span class="cb"></span><span class="li-text">Add a sources panel (sidebar or expander) showing which invoices, emails, or graph paths were retrieved</span></li>
+
+        <li class="tickable" data-key="p6_qp"><span class="cb"></span><span class="li-text"><strong>NEW</strong>: Add a "Predicted Quote" panel that appears when the router detects a <em>predict_quote</em> intent. Renders the labour estimate, materials breakdown table, and the basis (n past invoices + n POs). Use Streamlit <code>st.metric</code>, <code>st.dataframe</code>, and a small bar chart showing the labour cost distribution that the prediction was drawn from.</span></li>
+
+        <li class="tickable" data-key="p6_05"><span class="cb"></span><span class="li-text">Persist chat history to MongoDB <code>chat_history</code> collection</span></li>
+
+        <li class="tickable" data-key="p6_06"><span class="cb"></span><span class="li-text">Style with autumn palette — set theme in <code>.streamlit\config.toml</code></span></li>
+        <div class="code-wrap"><pre class="code-block">[theme]
+primaryColor = "#D4896B"
+backgroundColor = "#FAF8F5"
+secondaryBackgroundColor = "#FDFAF6"
+textColor = "#2D2520"
+font = "sans serif"</pre></div>
+
+        <li class="tickable" data-key="p6_07"><span class="cb"></span><span class="li-text">Test 5 sample questions covering all 3 retrieval paths</span></li>
+
+        <li class="tickable" data-key="p6_08"><span class="cb"></span><span class="li-text">Commit, tag, push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add app/
+git commit -m "Phase 6: Streamlit chatbot with sources panel"
+git tag v0.4-chat
+git push --tags</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 7 ===== -->
+  <section class="phase" id="p7" style="--c:#E8C5C5; --c-light:#FCF0F0; --c-mid:#F0D5D5; --c-dark:#7A3F3F;">
+    <div class="phase-header" data-toggle="p7">
+      <div class="phase-title-block">
+        <div class="phase-num">7</div>
+        <div class="phase-meta">
+          <h3>BI Dashboard + Eval Set</h3>
+          <div class="day">Saturday 2 May • ~2h • blush</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p7">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>The BI dashboard is a separate rubric line item from RAG evaluation — Dr. Rizwan wants charts showing business value, not just retrieval accuracy. Plus you need the 20-question eval set ready before you can run any baselines tomorrow.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p7_01"><span class="cb"></span><span class="li-text">Create <code>app\dashboard.py</code> with Plotly: revenue by trade, top 10 items by usage, customer activity heatmap by county, average invoice by job type</span></li>
+
+        <li class="tickable" data-key="p7_02"><span class="cb"></span><span class="li-text">Run and verify all 4 charts render</span></li>
+        <div class="code-wrap"><pre class="code-block">streamlit run app\dashboard.py</pre></div>
+
+        <li class="tickable" data-key="p7_03"><span class="cb"></span><span class="li-text">Export each chart as PNG to <code>docs\dashboard_*.png</code> for the report</span></li>
+
+        <li class="tickable" data-key="p7_04"><span class="cb"></span><span class="li-text">Create <code>eval\eval_set.json</code> with 20 questions: 5 exact lookup, 5 semantic paraphrase, 5 multi-hop graph, 5 aggregation</span></li>
+
+        <li class="tickable" data-key="p7_05"><span class="cb"></span><span class="li-text">For each question, hand-label the correct doc_ids that should be retrieved (gold standard)</span></li>
+        <div class="note">This is the most important step of the whole evaluation. Without good gold labels, all your recall@k and MRR numbers are meaningless. Take your time.</div>
+
+        <li class="tickable" data-key="p7_06"><span class="cb"></span><span class="li-text">Dry-run 2 questions through the chatbot to check the harness works end-to-end</span></li>
+
+        <li class="tickable" data-key="p7_07"><span class="cb"></span><span class="li-text">Commit and push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add app\dashboard.py eval\eval_set.json docs\
+git commit -m "Phase 7: BI dashboard + 20-question eval set"
+git push</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 8 ===== -->
+  <section class="phase" id="p8" style="--c:#B8A48F; --c-light:#EDE7DF; --c-mid:#C8B8A4; --c-dark:#5A4A38;">
+    <div class="phase-header" data-toggle="p8">
+      <div class="phase-title-block">
+        <div class="phase-num">8</div>
+        <div class="phase-meta">
+          <h3>Evaluation Runs</h3>
+          <div class="day">Sunday 3 May • ~2h • warm taupe</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p8">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>Without numbers your "validation" section in the report is opinion. Recall@k vs baselines, RAGAS faithfulness, and latency p95 are the three numbers that turn 70% into 80%+.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p8_01"><span class="cb"></span><span class="li-text">Create <code>eval\run_baselines.py</code> — runs each of the 20 questions through three systems: Mongo <code>$text</code>, BM25, and full RAG</span></li>
+
+        <li class="tickable" data-key="p8_02"><span class="cb"></span><span class="li-text">Run baselines, compute recall@5, recall@10, precision@5, MRR per system</span></li>
+        <div class="code-wrap"><pre class="code-block">python eval\run_baselines.py</pre></div>
+
+        <li class="tickable" data-key="p8_03"><span class="cb"></span><span class="li-text">Inspect results in <code>eval\results\baselines.csv</code> — verify RAG outperforms keyword and BM25</span></li>
+
+        <li class="tickable" data-key="p8_04"><span class="cb"></span><span class="li-text">Create <code>eval\run_ragas.py</code> — measure faithfulness, answer relevancy, context precision, context recall</span></li>
+
+        <li class="tickable" data-key="p8_05"><span class="cb"></span><span class="li-text">Run RAGAS (3 trial runs averaged)</span></li>
+        <div class="code-wrap"><pre class="code-block">python eval\run_ragas.py --trials 3</pre></div>
+
+        <li class="tickable" data-key="p8_06"><span class="cb"></span><span class="li-text">Create <code>eval\latency.py</code> — measure p50/p95/p99 per pipeline stage over 100 queries</span></li>
+        <div class="code-wrap"><pre class="code-block">python eval\latency.py --runs 100</pre></div>
+
+        <li class="tickable" data-key="p8_07"><span class="cb"></span><span class="li-text">Run an ablation: full RAG with vs without graph enrichment</span></li>
+
+        <li class="tickable" data-key="p8_08"><span class="cb"></span><span class="li-text">Categorise the failures from baselines into 5 buckets (e.g. retrieval miss, generation hallucination, ambiguous question, missing data, wrong route chosen)</span></li>
+
+        <li class="tickable" data-key="p8_09"><span class="cb"></span><span class="li-text">Record the backup demo as a screen capture (insurance against demo-day failure)</span></li>
+
+        <li class="tickable" data-key="p8_10"><span class="cb"></span><span class="li-text">Commit results, tag, push</span></li>
+        <div class="code-wrap"><pre class="code-block">git add eval\
+git commit -m "Phase 8: baselines, RAGAS, latency, failure taxonomy"
+git tag v0.5-eval
+git push --tags</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 9 ===== -->
+  <section class="phase" id="p9" style="--c:#C9B47B; --c-light:#F2EAD0; --c-mid:#D8C594; --c-dark:#5A4A1A;">
+    <div class="phase-header" data-toggle="p9">
+      <div class="phase-title-block">
+        <div class="phase-num">9</div>
+        <div class="phase-meta">
+          <h3>Report Writing</h3>
+          <div class="day">Monday 4 May • ~2h • muted gold</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p9">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>4 pages is brutally tight. Every paragraph must earn its place. The rubric breaks down into clear sections — write to the rubric, not to "what I built". Marks come from hitting the brief.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p9_01"><span class="cb"></span><span class="li-text">Open Word, set Harvard reference style and 4-page limit (excluding refs + appendix)</span></li>
+
+        <li class="tickable" data-key="p9_02"><span class="cb"></span><span class="li-text"><strong>Page 1</strong>: title, problem statement, stakeholders (trade owner, customer, finance team), objectives, justification of MongoDB+Neo4j choice, industry investigation (challenges + pitfalls of existing systems)</span></li>
+
+        <li class="tickable" data-key="p9_03"><span class="cb"></span><span class="li-text"><strong>Page 2</strong>: architecture diagram (export from Figma), schema highlights, methodology</span></li>
+
+        <li class="tickable" data-key="p9_04"><span class="cb"></span><span class="li-text"><strong>Page 3</strong>: implementation walk-through (ingestion, retrieval, chat), evaluation methodology</span></li>
+
+        <li class="tickable" data-key="p9_05"><span class="cb"></span><span class="li-text"><strong>Page 4</strong>: results table (baselines comparison), key insights from BI dashboard, limitations, future work, conclusion</span></li>
+
+        <li class="tickable" data-key="p9_06"><span class="cb"></span><span class="li-text">Add 6–10 Harvard-formatted references (GraphRAG paper, RAGAS paper, Neo4j docs, MongoDB Atlas Vector Search docs, Unstructured.io blog, Sadalage &amp; Fowler, Edge et al. 2024, Es et al. 2023)</span></li>
+
+        <li class="tickable" data-key="p9_07"><span class="cb"></span><span class="li-text">Add appendix (outside 4-page limit): full eval set, raw metrics CSV, extended screenshots, Cypher examples</span></li>
+
+        <li class="tickable" data-key="p9_08"><span class="cb"></span><span class="li-text">Proofread once for grammar and citation consistency</span></li>
+
+        <li class="tickable" data-key="p9_09"><span class="cb"></span><span class="li-text">Save report to <code>docs\DACARag_Report_v1.docx</code>, commit</span></li>
+        <div class="code-wrap"><pre class="code-block">git add docs\
+git commit -m "Phase 9: report draft v1"
+git push</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 10 ===== -->
+  <section class="phase" id="p10" style="--c:#B87555; --c-light:#F3DDD0; --c-mid:#CB9078; --c-dark:#5A2818;">
+    <div class="phase-header" data-toggle="p10">
+      <div class="phase-title-block">
+        <div class="phase-num">10</div>
+        <div class="phase-meta">
+          <h3>Slides &amp; Final Polish</h3>
+          <div class="day">Tuesday 5 May • ~2h • rust</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p10">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>Presentation is 8% of your grade — easy marks if prepared, easy losses if you wing it. Verifying a clean docker compose run today protects your demo tomorrow.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p10_01"><span class="cb"></span><span class="li-text">Build a 10-slide deck in PowerPoint (autumn palette): title, problem, architecture, data, demo placeholder, evaluation results, BI insights, limitations, future work, Q&amp;A</span></li>
+
+        <li class="tickable" data-key="p10_02"><span class="cb"></span><span class="li-text">Time the presentation — aim for 8 minutes spoken + 2 minutes Q&amp;A</span></li>
+
+        <li class="tickable" data-key="p10_03"><span class="cb"></span><span class="li-text">Final demo rehearsal: clean clone of repo to a fresh folder</span></li>
+        <div class="code-wrap"><pre class="code-block">cd C:\Temp
+git clone https://github.com/Kay79SL/RAG-Trades-Quotes.git fresh-test
+cd fresh-test
+docker compose up -d
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app\streamlit_app.py</pre></div>
+
+        <li class="tickable" data-key="p10_04"><span class="cb"></span><span class="li-text">Verify backup demo video plays correctly (codec, audio, length)</span></li>
+
+        <li class="tickable" data-key="p10_05"><span class="cb"></span><span class="li-text">Re-read the report twice for typos and flow</span></li>
+
+        <li class="tickable" data-key="p10_06"><span class="cb"></span><span class="li-text">Finalise <code>README.md</code> with run instructions, screenshots, license</span></li>
+
+        <li class="tickable" data-key="p10_07"><span class="cb"></span><span class="li-text">Commit slides, final report, tag v1.0-final</span></li>
+        <div class="code-wrap"><pre class="code-block">git add .
+git commit -m "Phase 10: slides + final polish"
+git tag v1.0-final
+git push --tags</pre></div>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 11 ===== -->
+  <section class="phase" id="p11" style="--c:#A85A3A; --c-light:#EFD0C0; --c-mid:#BD7858; --c-dark:#4A1F0F;">
+    <div class="phase-header" data-toggle="p11">
+      <div class="phase-title-block">
+        <div class="phase-num">11</div>
+        <div class="phase-meta">
+          <h3>Submission &amp; Presentation</h3>
+          <div class="day">Wednesday 6 May • submission day</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p11">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>Last day. Slow down, double-check everything, then submit. Don't leave it to 23:58.</div>
+      <ol class="steps">
+        <li class="tickable" data-key="p11_01"><span class="cb"></span><span class="li-text">Morning: final read of the 4-page report</span></li>
+        <li class="tickable" data-key="p11_02"><span class="cb"></span><span class="li-text">Verify Moodle CA submission section is open and accepts your file types</span></li>
+        <li class="tickable" data-key="p11_03"><span class="cb"></span><span class="li-text">Submit the report PDF to Moodle</span></li>
+        <li class="tickable" data-key="p11_04"><span class="cb"></span><span class="li-text">Submit the GitHub repo URL</span></li>
+        <li class="tickable" data-key="p11_05"><span class="cb"></span><span class="li-text">Submit the backup demo video</span></li>
+        <li class="tickable" data-key="p11_06"><span class="cb"></span><span class="li-text">Verify both cloud DBs (Atlas + AuraDB) respond to a quick ping before walking into the presentation</span></li>
+        <li class="tickable" data-key="p11_07"><span class="cb"></span><span class="li-text">Present</span></li>
+        <li class="tickable" data-key="p11_08"><span class="cb"></span><span class="li-text">Push the final tag</span></li>
+        <div class="code-wrap"><pre class="code-block">git tag v1.0-submitted
+git push --tags</pre></div>
+        <li class="tickable" data-key="p11_09"><span class="cb"></span><span class="li-text">Celebrate. You earned it.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== PHASE 12 — POST-SUBMISSION CLOUD DOCKER ===== -->
+  <section class="phase" id="p12" style="--c:#0078D4; --c-light:#DEEEF9; --c-mid:#5BA8E0; --c-dark:#003F6F;">
+    <div class="phase-header" data-toggle="p12">
+      <div class="phase-title-block">
+        <div class="phase-num">12</div>
+        <div class="phase-meta">
+          <h3>Cloud Docker on Azure (optional, post-submission)</h3>
+          <div class="day">After CA submission • ~6-8h over a weekend • Azure blue</div>
+        </div>
+      </div>
+      <div class="phase-counter" data-phase="p12">0 / 0</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="phase-body">
+      <div class="why"><strong>Why</strong>Real cloud Docker experience for your CV. Containerise your DACARag Streamlit chatbot and deploy it to Azure Container Apps using your Azure for Students €100 credit. The CA is already submitted — this is pure learning, no deadline pressure. By the end you'll have a publicly accessible URL hosting your chatbot.</div>
+
+      <div class="note" style="margin-left:0; margin-bottom:1.2rem;">This phase is intentionally separate from the CA. Don't start it until after Wednesday 6 May. The skills here are valuable but they're a different track from "design a polyglot persistence architecture for RAG" which is what the CA grades.</div>
+
+      <ol class="steps">
+
+        <li class="tickable" data-key="p12_01"><span class="cb"></span><span class="li-text"><strong>Sub-phase A — Sign up for Azure for Students.</strong> Use your DkIT email address.</span></li>
+        <div class="code-wrap"><pre class="code-block">https://azure.microsoft.com/en-us/free/students/</pre></div>
+        <div class="note">No credit card required. Get €100 credit + 12 months of free services. Verification with your DkIT email may take a few minutes.</div>
+
+        <li class="tickable" data-key="p12_02"><span class="cb"></span><span class="li-text">Once approved, sign in to <code>portal.azure.com</code></span></li>
+
+        <li class="tickable" data-key="p12_03"><span class="cb"></span><span class="li-text">Install Azure CLI on your laptop (no admin rights needed for the user-scoped installer)</span></li>
+        <div class="code-wrap"><pre class="code-block">winget install -e --id Microsoft.AzureCLI</pre></div>
+        <div class="note">If winget isn't available, download the MSI from <code>aka.ms/installazurecliwindows</code>. Open a NEW PowerShell window after install.</div>
+
+        <li class="tickable" data-key="p12_04"><span class="cb"></span><span class="li-text">Verify Azure CLI works and log in</span></li>
+        <div class="code-wrap"><pre class="code-block">az --version
+az login</pre></div>
+
+        <li class="tickable" data-key="p12_05"><span class="cb"></span><span class="li-text"><strong>Sub-phase B — Containerise the Streamlit app.</strong> Create a <code>Dockerfile</code> in the project root</span></li>
+        <div class="code-wrap"><pre class="code-block">FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy requirements first for better Docker layer caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the app code
+COPY app/ ./app/
+COPY retrieve/ ./retrieve/
+
+# Streamlit needs a port and a healthcheck endpoint
+EXPOSE 8501
+
+# Run the chatbot
+CMD ["streamlit", "run", "app/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]</pre></div>
+
+        <li class="tickable" data-key="p12_06"><span class="cb"></span><span class="li-text">Create a <code>.dockerignore</code> to keep the image small</span></li>
+        <div class="code-wrap"><pre class="code-block">venv/
+.venv/
+.env
+.env.example
+neo4j/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+notebooks/
+docs/
+data/emails/
+*.log</pre></div>
+
+        <li class="tickable" data-key="p12_07"><span class="cb"></span><span class="li-text">Test the build locally with Azure Container Registry's cloud build (no local Docker needed!)</span></li>
+        <div class="code-wrap"><pre class="code-block">az group create --name dacarag-rg --location northeurope</pre></div>
+
+        <li class="tickable" data-key="p12_08"><span class="cb"></span><span class="li-text">Create an Azure Container Registry (ACR)</span></li>
+        <div class="code-wrap"><pre class="code-block">az acr create --resource-group dacarag-rg --name dacaragacr --sku Basic --admin-enabled true</pre></div>
+        <div class="note">If "dacaragacr" is taken, try "dacaragacr2026" or another suffix. ACR names must be globally unique.</div>
+
+        <li class="tickable" data-key="p12_09"><span class="cb"></span><span class="li-text">Build the image in the cloud (no local Docker required)</span></li>
+        <div class="code-wrap"><pre class="code-block">cd F:\Apps\DACARag
+az acr build --registry dacaragacr --image dacarag:v1 .</pre></div>
+        <div class="note">This uploads your code to Azure, builds the Docker image there, and pushes it to your registry. Takes 3-5 minutes the first time. Watch the logs stream in your terminal.</div>
+
+        <li class="tickable" data-key="p12_10"><span class="cb"></span><span class="li-text"><strong>Sub-phase C — Deploy to Azure Container Apps.</strong> Install the Container Apps extension</span></li>
+        <div class="code-wrap"><pre class="code-block">az extension add --name containerapp --upgrade
+az provider register --namespace Microsoft.App
+az provider register --namespace Microsoft.OperationalInsights</pre></div>
+
+        <li class="tickable" data-key="p12_11"><span class="cb"></span><span class="li-text">Create a Container Apps environment</span></li>
+        <div class="code-wrap"><pre class="code-block">az containerapp env create \
+  --name dacarag-env \
+  --resource-group dacarag-rg \
+  --location northeurope</pre></div>
+
+        <li class="tickable" data-key="p12_12"><span class="cb"></span><span class="li-text">Get your ACR credentials (needed for the deploy step)</span></li>
+        <div class="code-wrap"><pre class="code-block">az acr credential show --name dacaragacr</pre></div>
+        <div class="note">Note the <code>username</code> and <code>password</code> from the output — you'll paste them in the next step.</div>
+
+        <li class="tickable" data-key="p12_13"><span class="cb"></span><span class="li-text">Deploy the chatbot — replace the placeholders with your real values</span></li>
+        <div class="code-wrap"><pre class="code-block">az containerapp create \
+  --name dacarag-chat \
+  --resource-group dacarag-rg \
+  --environment dacarag-env \
+  --image dacaragacr.azurecr.io/dacarag:v1 \
+  --target-port 8501 \
+  --ingress external \
+  --registry-server dacaragacr.azurecr.io \
+  --registry-username &lt;ACR_USERNAME&gt; \
+  --registry-password &lt;ACR_PASSWORD&gt; \
+  --env-vars \
+    MONGO_URI=secretref:mongo-uri \
+    MONGO_DB=trades_quotes \
+    NEO4J_URI=secretref:neo4j-uri \
+    NEO4J_USER=neo4j \
+    NEO4J_PASSWORD=secretref:neo4j-pwd \
+    ANTHROPIC_API_KEY=secretref:anthropic-key \
+  --secrets \
+    mongo-uri=&lt;your_full_mongo_uri&gt; \
+    neo4j-uri=&lt;your_neo4j_uri&gt; \
+    neo4j-pwd=&lt;your_neo4j_password&gt; \
+    anthropic-key=&lt;your_anthropic_key&gt; \
+  --cpu 0.5 --memory 1.0Gi \
+  --min-replicas 0 --max-replicas 1</pre></div>
+        <div class="warn">Use <code>secretref:</code> for sensitive values. Never bake passwords into the image. <code>--min-replicas 0</code> means the container shuts down when idle, saving credit.</div>
+
+        <li class="tickable" data-key="p12_14"><span class="cb"></span><span class="li-text">Get the public URL of your deployed chatbot</span></li>
+        <div class="code-wrap"><pre class="code-block">az containerapp show \
+  --name dacarag-chat \
+  --resource-group dacarag-rg \
+  --query "properties.configuration.ingress.fqdn" \
+  --output tsv</pre></div>
+        <div class="note">Output looks like <code>dacarag-chat.lemonbeach-abc123.northeurope.azurecontainerapps.io</code>. Open it in a browser — your chatbot should load!</div>
+
+        <li class="tickable" data-key="p12_15"><span class="cb"></span><span class="li-text"><strong>Sub-phase D — Watch the logs live</strong> while testing the chatbot</span></li>
+        <div class="code-wrap"><pre class="code-block">az containerapp logs show --name dacarag-chat --resource-group dacarag-rg --follow</pre></div>
+
+        <li class="tickable" data-key="p12_16"><span class="cb"></span><span class="li-text">Visit the URL, ask the chatbot 5 questions, verify it works end-to-end (using your Atlas + AuraDB cloud databases)</span></li>
+
+        <li class="tickable" data-key="p12_17"><span class="cb"></span><span class="li-text"><strong>Sub-phase E — Clean up to save credit.</strong> Stop the app when not using it</span></li>
+        <div class="code-wrap"><pre class="code-block">az containerapp update --name dacarag-chat --resource-group dacarag-rg --min-replicas 0 --max-replicas 0</pre></div>
+
+        <li class="tickable" data-key="p12_18"><span class="cb"></span><span class="li-text">When done experimenting, tear it all down (preserves credit for future projects)</span></li>
+        <div class="code-wrap"><pre class="code-block">az group delete --name dacarag-rg --yes --no-wait</pre></div>
+        <div class="warn">This deletes EVERYTHING in the resource group: the app, the registry, the environment. Use this when you're sure you're done.</div>
+
+        <li class="tickable" data-key="p12_19"><span class="cb"></span><span class="li-text">Document the process — add an <code>azure-deployment.md</code> to your <code>docs/</code> folder summarising what you did. Include screenshots of: Azure portal, the ACR, the running Container App, your live chatbot URL.</span></li>
+
+        <li class="tickable" data-key="p12_20"><span class="cb"></span><span class="li-text">Update your README and LinkedIn — you can now legitimately claim "Deployed Streamlit RAG chatbot to Azure Container Apps via ACR-built Docker image with managed secrets and zero-replica autoscaling"</span></li>
+
+        <li class="tickable" data-key="p12_21"><span class="cb"></span><span class="li-text">Push to GitHub on a new branch so the cloud-deployment work is separate from the CA submission</span></li>
+        <div class="code-wrap"><pre class="code-block">git checkout -b feature/azure-deployment
+git add Dockerfile .dockerignore docs/azure-deployment.md
+git commit -m "Phase 12: Azure Container Apps deployment"
+git push origin feature/azure-deployment</pre></div>
+      </ol>
+
+      <div class="note" style="margin-left:0; margin-top:1.5rem;">
+        <strong style="display:block; margin-bottom:0.4rem;">What you'll have learned by the end of Phase 12:</strong>
+        How to: write a production Dockerfile, build images in the cloud without local Docker, manage container registries, deploy to Container Apps, configure ingress and secrets, watch live logs, scale containers, and tear down resources cleanly. These are real, demonstrable cloud-native skills that show up at interviews.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  var SK = 'dacarag_progress_v1';
+  var state = (function(){ try { return JSON.parse(localStorage.getItem(SK)||'{}'); } catch(e) { return {}; } })();
+  function save() { try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) {} }
+
+  // Restore tick state on load
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.tickable').forEach(function(li) {
+      var key = li.getAttribute('data-key');
+      if (state[key]) li.classList.add('done');
+    });
+    addCopyButtons();
+    updateCounts();
+
+    // Open Phase 0 by default on first visit
+    if (!localStorage.getItem(SK + '_visited')) {
+      var p0 = document.getElementById('p0');
+      if (p0) p0.classList.add('open');
+      localStorage.setItem(SK + '_visited', '1');
+    }
+  });
+
+  // Tick handler via event delegation
+  document.addEventListener('click', function(e) {
+    // Phase header toggle
+    var hdr = e.target.closest('.phase-header');
+    if (hdr && !e.target.closest('.tickable') && !e.target.closest('.copy-btn')) {
+      var phase = hdr.parentElement;
+      phase.classList.toggle('open');
+      return;
+    }
+    // Tickable item
+    var li = e.target.closest('.tickable');
+    if (!li) return;
+    var key = li.getAttribute('data-key');
+    if (!key) return;
+    li.classList.toggle('done');
+    state[key] = li.classList.contains('done');
+    save();
+    updateCounts();
+  });
+
+  // Reset
+  document.getElementById('resetBtn').addEventListener('click', function() {
+    if (!confirm('Clear all progress and start fresh?')) return;
+    state = {};
+    save();
+    document.querySelectorAll('.tickable.done').forEach(function(li) { li.classList.remove('done'); });
+    updateCounts();
+  });
+
+  function updateCounts() {
+    var total = document.querySelectorAll('.tickable').length;
+    var done = document.querySelectorAll('.tickable.done').length;
+    var pct = total ? Math.round(done / total * 100) : 0;
+    document.getElementById('progressText').textContent = done + ' / ' + total + ' steps';
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressFill').style.width = pct + '%';
+
+    // Per-phase counters
+    document.querySelectorAll('.phase').forEach(function(p) {
+      var phaseTotal = p.querySelectorAll('.tickable').length;
+      var phaseDone = p.querySelectorAll('.tickable.done').length;
+      var counter = p.querySelector('.phase-counter');
+      counter.textContent = phaseDone + ' / ' + phaseTotal;
+      counter.classList.toggle('complete', phaseDone === phaseTotal && phaseTotal > 0);
+    });
+
+    // Completion banner
+    var banner = document.getElementById('completeBanner');
+    banner.classList.toggle('show', done === total && total > 0);
+  }
+
+  function addCopyButtons() {
+    document.querySelectorAll('.code-block').forEach(function(block) {
+      // Skip if already wrapped
+      if (block.parentElement.classList.contains('code-wrap')) {
+        var existingBtn = block.parentElement.querySelector('.copy-btn');
+        if (!existingBtn) {
+          var btn = document.createElement('button');
+          btn.className = 'copy-btn';
+          btn.textContent = 'Copy';
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var text = block.innerText || block.textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(function() { flash(btn); });
+            } else {
+              var ta = document.createElement('textarea');
+              ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+              document.body.appendChild(ta); ta.select();
+              try { document.execCommand('copy'); } catch(_) {}
+              document.body.removeChild(ta);
+              flash(btn);
+            }
+          });
+          block.parentElement.appendChild(btn);
+        }
+      }
+    });
+  }
+  function flash(btn) {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+  }
+</script>
+
+</body>
+</html>

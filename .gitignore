@@ -14,3 +14,13 @@ neo4j/import/
 Thumbs.db
 .DS_Store
 *.log
+Neo4j-ad0f1994-Created-2026-04-30
+# Neo4j credentials - NEVER commit
+Neo4j-*.txt
+*credentials*.txt
+
+# Editor / OS clutter
+*.bak
+*~
+Thumbs.db
+.DS_Store
