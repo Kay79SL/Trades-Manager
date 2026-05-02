@@ -49,7 +49,7 @@ for query in queries:
     ]))
 
     if not results:
-        print("  No results — index may still be building, or chunks empty.")
+        print("  No results - index may still be building, or chunks empty.")
         continue
 
     for r in results:
