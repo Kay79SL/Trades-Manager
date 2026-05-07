@@ -82,8 +82,8 @@ def build_user_prompt(
     items_summary: str,
 ) -> str:
     """Build the per-email user prompt."""
-    job_options = "\n".join(
-        f"  - {j['job_type_id']}: {j['job_name']} ({j['trade']})"
+    job_options = "\n".join( # NB: job_type_id is what we want to extract, not job_name
+        f"  - {j['job_type_id']}: {j['job_name']} ({j['trade']})" # include trade in job options to help disambiguate for the model
         for j in job_types
     )
 

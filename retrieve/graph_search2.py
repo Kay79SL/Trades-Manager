@@ -19,6 +19,7 @@ Used by:
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from typing import Any
 
 from dotenv import load_dotenv
@@ -28,10 +29,8 @@ from neo4j import GraphDatabase
 load_dotenv()
 
 
-# ---------------------------------------------------------------------------
-# Driver cache with auto-recovery (AuraDB Free pauses on idle)
-# ---------------------------------------------------------------------------
-
+@lru_cache(maxsize=1)
+# Module-level driver cache (replaces @lru_cache so we can invalidate it)
 _DRIVER = {"instance": None}
 
 
@@ -43,7 +42,8 @@ def _create_driver():
     return GraphDatabase.driver(
         uri,
         auth=(user, password),
-        max_connection_lifetime=300,
+        # AuraDB Free pauses after idle - keep connections fresh
+        max_connection_lifetime=300,  # 5 min
         connection_acquisition_timeout=30,
     )
 
@@ -53,15 +53,18 @@ def _get_driver():
     Get a working Neo4j driver. If the cached driver is dead (AuraDB
     paused), transparently reconnect. End user never sees the error.
     """
+    # First call - create driver
     if _DRIVER["instance"] is None:
         _DRIVER["instance"] = _create_driver()
         return _DRIVER["instance"]
 
+    # Subsequent calls - ping to verify driver is alive
     try:
         with _DRIVER["instance"].session() as s:
             s.run("RETURN 1").single()
         return _DRIVER["instance"]
     except Exception:
+        # Driver is defunct - close, reconnect
         try:
             _DRIVER["instance"].close()
         except Exception:
@@ -154,6 +157,7 @@ def customer_full_history(customer_id: str) -> dict[str, list]:
 def similar_customers_by_job(job_type_id: str, limit: int = 5) -> list[dict]:
     """
     Find customers who have had work done in the same job_type.
+    Useful for 'have we worked with someone like this before?' queries.
     """
     cypher = """
     MATCH (j:JobType {job_type_id: $job_type_id})<-[:FOR_JOB|ABOUT_JOB]-(rec)
@@ -175,7 +179,7 @@ def similar_customers_by_job(job_type_id: str, limit: int = 5) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def po_full_context(po_number: str) -> dict:
-    """Pull a PO with all its connected entities."""
+    """Pull a PO with all its connected entities (customer, job_type, items)."""
     cypher = """
     MATCH (po:PO {po_number: $po_number})
     OPTIONAL MATCH (po)-[:FOR_CUSTOMER]->(c:Customer)
@@ -215,7 +219,7 @@ def similar_pos_by_job_type(job_name: str, limit: int = 5) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def jobs_for_trade(trade: str) -> list[dict]:
-    """All job types served by a trade."""
+    """All job types served by a trade (plumber, carpenter, electrician)."""
     cypher = """
     MATCH (j:JobType)-[:OF_TRADE]->(t:Trade {name: $trade})
     RETURN
@@ -232,7 +236,9 @@ def jobs_for_trade(trade: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def graph_traversal(params: dict) -> dict[str, Any]:
-    """Dispatcher for the router. Maps params to the right Cypher template."""
+    """
+    Dispatcher for the router. Maps params to the right Cypher template.
+    """
     out: dict[str, Any] = {}
 
     if "job_type_id" in params:
@@ -273,5 +279,6 @@ if __name__ == "__main__":
     elif arg in ("plumber", "carpenter", "electrician"):
         out = graph_traversal({"trade": arg})
     else:
+        # Try as job_type_id
         out = graph_traversal({"job_type_id": arg})
     print(json.dumps(out, indent=2, default=str))

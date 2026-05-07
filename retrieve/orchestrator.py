@@ -4,20 +4,7 @@ orchestrator.py
 Module 7 of Phase 5 retrieval orchestration — THE GLUE.
 
 Single entry point function `answer_query(user_message)` that ties all
-six Phase 5 modules together. The Streamlit UI (Phase 6) only needs to
-call this one function — orchestrator handles routing, retrieval,
-context assembly, and the final Claude API call.
-
-Flow:
-  1. Router classifies the query
-  2. Selected retrievers run (vector / mongo / graph / predict)
-  3. Context assembler merges results
-  4. Claude generates a grounded answer
-  5. Return answer + sources + routing trace for the UI
-
-Used by:
-  - app/streamlit_app.py (the chatbot UI)
-  - test scripts and notebooks for batch evaluation
+six Phase 5 modules together. Updated to support list/browse queries.
 """
 
 from __future__ import annotations
@@ -48,12 +35,15 @@ quotes, jobs, and pricing.
 CRITICAL RULES:
 - Use ONLY the context provided below. Do not invent customer names, prices,
   invoice numbers, or any other facts.
+- If the context contains a list of records, present them clearly and
+  comprehensively. Don't say "I can only see one" if the list has more.
 - If the context does not contain the answer, say so honestly.
 - Quote specific numbers (€ amounts, customer ids, PO numbers, dates) when
   they appear in the context.
 - For pricing questions, present the prediction clearly and mention the
   confidence level.
-- Keep responses concise and professional. No unnecessary preamble."""
+- Keep responses professional and well-formatted (use bullet points for lists).
+- No unnecessary preamble."""
 
 
 @lru_cache(maxsize=1)
@@ -61,36 +51,56 @@ def _get_client():
     return Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
-# ---------------------------------------------------------------------------
-# Main entry point
-# ---------------------------------------------------------------------------
+def _handle_list_query(list_target: str) -> dict:
+    """Fetch list/summary data based on what the user wants to see."""
+    if list_target == "pos":
+        return {
+            "type": "pos",
+            "title": "All Purchase Orders",
+            "items": mongo_lookup.list_all_pos(),
+        }
+    elif list_target == "customers":
+        return {
+            "type": "customers",
+            "title": "Customers",
+            "items": mongo_lookup.list_all_customers(),
+        }
+    elif list_target == "jobs":
+        return {
+            "type": "jobs",
+            "title": "Job Types",
+            "items": mongo_lookup.list_all_job_types(),
+        }
+    elif list_target == "invoices":
+        return {
+            "type": "invoices",
+            "title": "Recent Invoices",
+            "items": mongo_lookup.list_all_invoices(),
+        }
+    elif list_target == "emails":
+        return {
+            "type": "emails",
+            "title": "Recent Emails",
+            "items": mongo_lookup.list_recent_emails(),
+        }
+    elif list_target == "summary":
+        return {
+            "type": "summary",
+            "title": "Database Overview",
+            "items": mongo_lookup.get_collection_summary(),
+        }
+    return {}
+
 
 def answer_query(user_message: str, verbose: bool = False) -> dict[str, Any]:
-    """
-    The single entry point for the chatbot. Orchestrates the entire
-    retrieve-then-answer flow.
-
-    Args:
-        user_message:  The user's natural-language query.
-        verbose:       If True, includes raw retrieval results in the output
-                       (useful for debugging and for the UI's "Sources" panel).
-
-    Returns:
-        dict with keys:
-            - answer:       Claude's natural-language response (str)
-            - sources:      List of source identifiers for citation
-            - routing:      How the query was classified (intent, paths, method)
-            - latency_ms:   Total time for the call
-            - raw_results:  Raw retriever outputs (only if verbose=True)
-    """
+    """The single entry point for the chatbot."""
     t_start = time.time()
 
-    # ===== Step 1: Router decides which retrievers to invoke =====
+    # Step 1: Router decides which retrievers to invoke
     routing = router.classify_query(user_message)
 
-    # ===== Step 2: Run the selected retrievers =====
+    # Step 2: Run the selected retrievers
     results: dict[str, Any] = {}
-
     paths = routing.get("paths", [])
     params = routing.get("params", {})
 
@@ -101,7 +111,13 @@ def answer_query(user_message: str, verbose: bool = False) -> dict[str, Any]:
         results["mongo"] = mongo_lookup.lookup_by_intent(params)
 
     if "graph" in paths:
-        results["graph"] = graph_search.graph_traversal(params)
+        # Enrich params with customer_id resolved by mongo lookup
+        # so graph_traversal can call customer_full_history()
+        graph_params = dict(params)
+        mongo_result = results.get("mongo", {})
+        if mongo_result.get("customer", {}).get("customer_id"):
+            graph_params["customer_id"] = mongo_result["customer"]["customer_id"]
+        results["graph"] = graph_search.graph_traversal(graph_params)
 
     if "predict_quote" in paths:
         job_name = params.get("job_name", "")
@@ -111,14 +127,18 @@ def answer_query(user_message: str, verbose: bool = False) -> dict[str, Any]:
                 job_type_id=params.get("job_type_id"),
             )
 
-    # ===== Step 3: Assemble context for Claude =====
+    # NEW: list/browse path
+    if "list" in paths:
+        results["list"] = _handle_list_query(params.get("list_target", "summary"))
+
+    # Step 3: Assemble context
     context = context_assembler.assemble_context(results, user_query=user_message)
 
-    # ===== Step 4: Call Claude to generate the grounded answer =====
+    # Step 4: Call Claude
     client = _get_client()
     response = client.messages.create(
         model=ANSWER_MODEL,
-        max_tokens=1500,
+        max_tokens=2000,  # Increased to handle list responses
         system=SYSTEM_PROMPT,
         messages=[
             {
@@ -152,16 +172,12 @@ def answer_query(user_message: str, verbose: bool = False) -> dict[str, Any]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# CLI for quick end-to-end testing
-# ---------------------------------------------------------------------------
-
 if __name__ == "__main__":
     import sys
     queries = sys.argv[1:] if len(sys.argv) > 1 else [
         "How much for a boiler installation?",
         "Show me PO-2026-P0042",
-        "What customers have had work done by carpenters?",
+        "show me all POs",
     ]
     for q in queries:
         print(f"\n{'=' * 70}")
@@ -170,5 +186,4 @@ if __name__ == "__main__":
         out = answer_query(q, verbose=False)
         print(f"\n{out['answer']}")
         print(f"\n--- routing: {out['routing']['intent']} via {out['routing']['method']} ---")
-        print(f"--- sources ({len(out['sources'])}): {', '.join(out['sources'][:5])} ---")
         print(f"--- {out['latency_ms']}ms / {out['tokens_in']} tokens in / {out['tokens_out']} tokens out ---")

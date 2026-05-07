@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DACARag — Project Retrospective</title>
+<style>
+:root {
+    --bg: #FBF8F2;
+    --card: #FDFAF6;
+    --border: #E5DDD2;
+    --text: #2D2520;
+    --muted: #786558;
+    --accent: #B85A5A;
+    --code-bg: #F5EFE5;
+    --code-text: #5A3A1A;
+}
+* { box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "DM Sans", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.55;
+}
+.wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+}
+header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+}
+h1 {
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 2.2rem;
+    margin: 0 0 6px 0;
+}
+.subtitle {
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin: 0;
+}
+.intro {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 32px;
+}
+.intro p {
+    margin: 0 0 10px 0;
+}
+.intro p:last-child { margin-bottom: 0; }
+.tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+.tag {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.phase {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 6px solid var(--c, var(--accent));
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 22px;
+}
+.phase-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.phase-num {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+}
+.phase h2 {
+    margin: 0;
+    color: var(--text);
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+.phase-date {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+.phase-summary {
+    font-style: italic;
+    color: var(--muted);
+    margin: 6px 0 18px 0;
+    border-left: 3px solid var(--border);
+    padding-left: 12px;
+}
+.phase h3 {
+    margin: 18px 0 8px 0;
+    font-size: 0.78rem;
+    color: var(--c-dark, var(--accent));
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.phase ul {
+    margin: 0 0 8px 0;
+    padding-left: 22px;
+}
+.phase li {
+    margin-bottom: 6px;
+}
+code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    font-family: "JetBrains Mono", Consolas, Monaco, monospace;
+}
+.callout {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 0.92rem;
+    color: var(--code-text);
+}
+.callout strong {
+    color: var(--c-dark, var(--accent));
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.9rem;
+}
+th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+th {
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+.outcome {
+    background: rgba(255,255,255,0.5);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 12px;
+}
+.outcome-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-align: center;
+}
+@media print {
+    body { background: white; }
+    .phase { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+    <h1>DACARag — Project Retrospective</h1>
+    <p class="subtitle">A polyglot RAG system for Irish trades. What was built, where the data lives, and how each piece serves the chatbot.</p>
+</header>
+
+<div class="intro">
+    <p><strong>What DACARag is.</strong> A retrieval-augmented chatbot for plumbers, carpenters, and electricians that reads incoming customer quote-request emails, looks up whether the customer is known, finds similar past jobs, suggests likely materials, and drafts a quote. Every answer is grounded in three data stores rather than the LLM's parameters.</p>
+    <p><strong>The architecture in one line.</strong> MongoDB Atlas owns the records, Neo4j owns the relationships, Atlas Vector Search owns the embeddings; Claude Haiku routes queries; Streamlit serves the UI.</p>
+    <div class="tag-row">
+        <span class="tag">MongoDB Atlas</span>
+        <span class="tag">Neo4j (Docker)</span>
+        <span class="tag">Atlas Vector Search</span>
+        <span class="tag">Claude API</span>
+        <span class="tag">Sentence-Transformers</span>
+        <span class="tag">Streamlit</span>
+        <span class="tag">Python 3.11</span>
+    </div>
+</div>
+
+
+<!-- ============ PHASE 0 ============ -->
+<section class="phase" style="--c:#C9A57B; --c-dark:#5A3A1A;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 0</div>
+            <h2>Project setup and synthetic data generation</h2>
+        </div>
+        <div class="phase-date">25 Apr · ~2h</div>
+    </div>
+    <p class="phase-summary">Stand up the project skeleton, the Docker compose stack, and a deterministic synthetic dataset of Irish trades records.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>ingest\generate_trades_dataset.py</code> — generates the seven core CSVs and 100 quote-request <code>.eml</code> files using fixed random seeds for reproducibility</li>
+        <li><code>docker-compose.yml</code> — defines the local Neo4j 5.20 container with APOC plugin and persistent volumes</li>
+        <li><code>.env</code> — holds <code>MONGO_URI</code>, <code>MONGO_DB=trades_quotes</code>, <code>NEO4J_URI=bolt://localhost:7687</code>, and the Anthropic key</li>
+        <li><code>requirements.txt</code> — pins <code>pymongo&gt;=4.6</code>, <code>neo4j&gt;=5.20</code>, <code>sentence-transformers</code>, <code>streamlit</code>, <code>anthropic</code>, <code>python-dotenv</code></li>
+    </ul>
+
+    <h3>Data generated</h3>
+    <table>
+        <tr><th>Output file</th><th>Rows</th><th>Purpose</th></tr>
+        <tr><td><code>customers.csv</code></td><td>121</td><td>Customer master with Irish names, eircodes, counties, preferred_trade</td></tr>
+        <tr><td><code>job_types.csv</code></td><td>60</td><td>Canonical jobs, each with a <code>trade</code>, base labour cost, typical hours</td></tr>
+        <tr><td><code>items.csv</code></td><td>88</td><td>Catalogue with EUR unit prices ex-VAT</td></tr>
+        <tr><td><code>job_items.csv</code></td><td>300</td><td>The recipe — which items each job typically uses, with typical quantities</td></tr>
+        <tr><td><code>invoices.csv</code></td><td>150</td><td>Past invoices: customer + job + dates + totals (subtotal, VAT, inc-VAT)</td></tr>
+        <tr><td><code>invoice_items.csv</code></td><td>~750</td><td>5 line items per invoice on average</td></tr>
+        <tr><td><code>emails/*.eml</code></td><td>100</td><td>Quote-request emails across six archetypes</td></tr>
+    </table>
+
+    <div class="outcome">
+        <div class="outcome-label">Why this matters for the chatbot</div>
+        Fixed random seeds mean the dataset is regenerable byte-for-byte. Every later phase can be re-run from scratch without losing reproducibility — important for marking, demos, and the evaluation set.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 1 ============ -->
+<section class="phase" style="--c:#D4A0A0; --c-dark:#7A3838;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 1</div>
+            <h2>MongoDB ingestion</h2>
+        </div>
+        <div class="phase-date">26 Apr · ~2h</div>
+    </div>
+    <p class="phase-summary">Load every CSV into MongoDB Atlas and the 100 emails into GridFS, with indexes tuned to the chatbot's expected access patterns.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>ingest\load_mongo.py</code> — connects to Atlas using <code>MONGO_URI</code>, reads each CSV with pandas, writes to a same-named collection. The 100 <code>.eml</code> files go into GridFS bucket <code>email_files</code> with parsed headers as metadata</li>
+    </ul>
+
+    <h3>Collections written to <code>trades_quotes</code></h3>
+    <table>
+        <tr><th>Collection</th><th>Documents</th><th>Role in the system</th></tr>
+        <tr><td><code>customers</code></td><td>121</td><td>Indexed lookup by <code>customer_id</code> when chatbot answers identity questions</td></tr>
+        <tr><td><code>job_types</code></td><td>60</td><td>Source of truth for the <code>trade</code> classification</td></tr>
+        <tr><td><code>items</code></td><td>88</td><td>Catalogue prices for materials cost calculations</td></tr>
+        <tr><td><code>job_items</code></td><td>300</td><td>Read once at ingest, becomes the basis for the Neo4j USES_ITEM relationships</td></tr>
+        <tr><td><code>invoices</code></td><td>150</td><td>Historical totals that feed labour-cost statistics</td></tr>
+        <tr><td><code>invoice_items</code></td><td>750</td><td>Line-level data for the BI dashboard's top-items chart</td></tr>
+        <tr><td><code>email_files.files</code> + <code>email_files.chunks</code></td><td>100</td><td>GridFS bucket holding raw <code>.eml</code> binaries — referenced by Phase 3</td></tr>
+    </table>
+
+    <h3>Indexes created</h3>
+    <ul>
+        <li><code>invoices.customer_id</code> ascending — drives the customer-history lookup</li>
+        <li><code>invoices.trade</code> ascending — drives trade filters in the dashboard</li>
+        <li><code>invoices.invoice_date</code> descending — drives recent-first ordering</li>
+        <li><code>emails.trade_contacted</code> and <code>emails.from_email</code> — drives email-related queries</li>
+    </ul>
+
+    <div class="outcome">
+        <div class="outcome-label">How this serves the chatbot</div>
+        When the user asks "what's Gerard Walsh's phone number?", the orchestrator sends one indexed Mongo lookup (<code>customers.find_one({customer_id: ...})</code>) and gets the answer in under 10ms. No graph traversal, no vector search — the right tool for an identity question is a document store with a primary-key index.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 2 ============ -->
+<section class="phase" style="--c:#A8B89F; --c-dark:#3F5235;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 2</div>
+            <h2>Neo4j graph build</h2>
+        </div>
+        <div class="phase-date">27 Apr · ~2h</div>
+    </div>
+    <p class="phase-summary">Spin up Neo4j in Docker and project the MongoDB data into a labelled property graph. The graph stores only IDs and relationships — never duplicates the document content.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>ingest\load_neo4j.py</code> — reads from MongoDB, opens a Bolt session, runs Cypher <code>MERGE</code> statements to create nodes and relationships idempotently</li>
+    </ul>
+
+    <h3>Nodes created (537 total across 7 labels)</h3>
+    <table>
+        <tr><th>Label</th><th>Count</th><th>Key property</th><th>Why it lives in the graph</th></tr>
+        <tr><td><code>Customer</code></td><td>121</td><td><code>customer_id</code></td><td>Anchor for customer-history traversals</td></tr>
+        <tr><td><code>Trade</code></td><td>3</td><td><code>name</code></td><td>Top of the classification hierarchy (Plumbing, Carpentry, Electrical)</td></tr>
+        <tr><td><code>JobType</code></td><td>60</td><td><code>job_type_id</code></td><td>Hub of the materials-recipe graph</td></tr>
+        <tr><td><code>Item</code></td><td>88</td><td><code>item_id</code></td><td>Connected to jobs via USES_ITEM and POs via CONTAINS_ITEM</td></tr>
+        <tr><td><code>Invoice</code></td><td>150</td><td><code>invoice_id</code></td><td>Bridges customer ↔ job for "what work has cust_X had?"</td></tr>
+        <tr><td><code>Email</code></td><td>100</td><td><code>email_id</code></td><td>Created in Phase 3 from the GridFS payload</td></tr>
+        <tr><td><code>PO</code></td><td>15</td><td><code>po_number</code></td><td>Created in Phase 3 from extracted PDFs</td></tr>
+    </table>
+
+    <h3>Relationships created (2,030 total across 11 types)</h3>
+    <table>
+        <tr><th>Pattern</th><th>What it represents</th><th>Used by</th></tr>
+        <tr><td><code>(JobType)-[:USES_ITEM {typical_quantity}]-&gt;(Item)</code></td><td>The materials recipe — which items a job typically uses, with quantities on the edge</td><td>Drives <code>predict_quote</code> materials estimation</td></tr>
+        <tr><td><code>(Customer)-[:HAS_INVOICE]-&gt;(Invoice)</code></td><td>Purchase history</td><td>"Has cust_0001 had work done before?" answered in one hop</td></tr>
+        <tr><td><code>(Invoice)-[:FOR_JOB]-&gt;(JobType)</code></td><td>Invoice-to-job linkage</td><td>"Median labour cost per job type" aggregations</td></tr>
+        <tr><td><code>(Invoice)-[:CONTAINS]-&gt;(Item)</code></td><td>Items that appeared together on an invoice</td><td>Co-purchase patterns and similar-job lookups</td></tr>
+        <tr><td><code>(JobType)-[:BELONGS_TO]-&gt;(Trade)</code></td><td>Trade classification</td><td>Filters all multi-trade rollups</td></tr>
+        <tr><td><code>(PO)-[:CONTAINS_ITEM]-&gt;(Item)</code></td><td>Line items on a PO</td><td>Supplier benchmarking inside <code>predict_quote</code></td></tr>
+    </table>
+
+    <div class="outcome">
+        <div class="outcome-label">How this serves the chatbot</div>
+        When the user asks "how much for a boiler installation?", the orchestrator hits Neo4j with a single Cypher query: <code>MATCH (j:JobType {job_name:'Boiler Installation'})-[u:USES_ITEM]-&gt;(i:Item) RETURN i, u.typical_quantity</code>. Three milliseconds. The equivalent in MongoDB would be a three-stage <code>$lookup</code> pipeline; the equivalent in raw SQL would be three joins. The graph is the right tool for recipe questions.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 3 ============ -->
+<section class="phase" style="--c:#C0A8D4; --c-dark:#553F70;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 3</div>
+            <h2>Multi-source ingestion and LLM enrichment</h2>
+        </div>
+        <div class="phase-date">28 Apr · ~2h</div>
+    </div>
+    <p class="phase-summary">Process the 100 quote-request emails and 15 supplier PO PDFs into structured records using Claude Haiku, then add them to both stores.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>ingest\extract_emails.py</code> — parses each <code>.eml</code> from GridFS, extracts headers, calls Claude Haiku with a structured prompt asking it to identify the customer email, the trade contacted, the requested job, and any quoted price</li>
+        <li><code>ingest\extract_pos.py</code> — opens each PO PDF with <code>pypdf</code>, sends the text to Claude Haiku with a JSON schema, gets back structured line items, totals, and a customer match</li>
+        <li><code>ingest\add_pos_to_graph.py</code> — for each extracted PO, creates a <code>(:PO)</code> node and the <code>CONTAINS_ITEM</code> edges</li>
+    </ul>
+
+    <h3>Data added</h3>
+    <ul>
+        <li><strong>MongoDB collection <code>emails</code> (100 docs)</strong> — parsed headers, cleaned body, extraction confidence per email</li>
+        <li><strong>MongoDB collection <code>pos</code> (15 docs)</strong> — embedded <code>line_items[]</code> array, <code>materials_subtotal</code>, supplier and customer fields</li>
+        <li><strong>MongoDB GridFS bucket <code>po_files</code> (15 PDFs + chunks)</strong> — the raw binary PDFs preserved for audit</li>
+        <li><strong>Neo4j</strong>: 100 <code>Email</code> nodes with <code>(Email)-[:SENT_BY]-&gt;(Customer)</code> and 15 <code>PO</code> nodes with <code>(PO)-[:CONTAINS_ITEM]-&gt;(Item)</code></li>
+    </ul>
+
+    <div class="callout">
+        <strong>Architectural decision.</strong> Email and PO ingestion is the system's most architecturally rich component because it exercises all three learning outcomes simultaneously: GridFS for binary storage, LLM extraction for unstructured-to-structured conversion, and graph projection for relationship modelling. This is the section to highlight in the report.
+    </div>
+
+    <div class="outcome">
+        <div class="outcome-label">How this serves the chatbot</div>
+        When the user asks "show me PO-2026-P0042", the orchestrator hits MongoDB by <code>po_number</code> and gets the structured JSON instantly. When they ask "how much did we pay for materials on plumbing jobs?", the orchestrator joins POs to job types via the graph, then sums materials_subtotal — that's the Materials Spend KPI you see on the dashboard.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 4 ============ -->
+<section class="phase" style="--c:#D4896B; --c-dark:#7A3F22;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 4</div>
+            <h2>Vector embeddings and Atlas Vector Search</h2>
+        </div>
+        <div class="phase-date">29 Apr · ~2h</div>
+    </div>
+    <p class="phase-summary">Embed every PO line, every email body, and every customer note into 384-dim vectors and index them with Atlas Vector Search.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>ingest\build_embeddings.py</code> — loads <code>sentence-transformers/all-MiniLM-L6-v2</code> (a distilled BERT), chunks each source by 500 chars with 100 char overlap, embeds each chunk, writes to a new <code>chunks</code> collection</li>
+        <li><strong>Atlas Vector Search index</strong> on <code>chunks.embedding</code>, configured via the Atlas UI: cosine similarity, 384 dimensions, dynamic mapping</li>
+    </ul>
+
+    <h3>What was indexed</h3>
+    <table>
+        <tr><th>Source</th><th>Chunks</th><th>What it lets the chatbot answer</th></tr>
+        <tr><td>PO descriptions and notes</td><td>~140</td><td>"What was the boiler model on the last big plumbing PO?"</td></tr>
+        <tr><td>Email bodies</td><td>~85</td><td>"Did anyone email about a leaky tap in March?"</td></tr>
+        <tr><td>Customer notes and addresses</td><td>~38</td><td>"Find me the customer in Drumcondra who had the kitchen rewire"</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>263</strong></td><td></td></tr>
+    </table>
+
+    <div class="outcome">
+        <div class="outcome-label">How this serves the chatbot</div>
+        Vector search picks up <em>semantic</em> similarity that keyword search misses. A user asking "I need someone for a leaky tap" doesn't have to use the exact word "tap" — the embedding for "leaky tap" is closer in 384-dim space to past PO descriptions about "dripping faucet" and "loose mixer" than to anything plumbing-keyword-matching would return. Atlas runs the search in under 100ms.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 5 ============ -->
+<section class="phase" style="--c:#C9A57B; --c-dark:#5A3A1A;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 5</div>
+            <h2>Retrieval orchestration</h2>
+        </div>
+        <div class="phase-date">30 Apr · ~2h</div>
+    </div>
+    <p class="phase-summary">The brain. A query router that classifies the user's intent and dispatches to the right combination of retrieval modules, then assembles the results into one Markdown context block for Claude.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>retrieve\orchestrator.py</code> — exposes <code>answer_query(user_input)</code>. Sends the user query to Claude Haiku for intent classification, dispatches to one or more retrievers, calls <code>context_assembler</code>, sends the final prompt to Claude Sonnet for the answer, and returns the response with sources, latency, and routing metadata</li>
+        <li><code>retrieve\mongo_lookup.py</code> — exact-match retrievers: <code>get_customer(customer_id)</code>, <code>get_invoice(invoice_id)</code>, <code>get_item(item_id)</code></li>
+        <li><code>retrieve\graph_search.py</code> — graph traversal retrievers: <code>items_for_job_by_name(job_name)</code>, <code>customer_history(customer_id)</code>, <code>similar_pos_by_job_type(job_type_id)</code></li>
+        <li><code>retrieve\vector_search.py</code> — semantic retriever: <code>vector_search(query, k=5)</code> against the Atlas Vector Search index</li>
+        <li><code>retrieve\context_assembler.py</code> — merges results from all three retrievers into one Markdown block under labelled headers (so Claude sees clean, structured context not a raw dump)</li>
+        <li><code>retrieve\predict_quote.py</code> — the killer feature. For a given job name: looks up the recipe in Neo4j (graph), looks up each item's price in Mongo (document), aggregates labour-cost statistics from past invoices (Mongo), benchmarks against similar POs (graph + Mongo). Returns a confidence-scored quote</li>
+    </ul>
+
+    <h3>The four routing intents</h3>
+    <table>
+        <tr><th>Intent</th><th>Triggered by</th><th>Retrievers used</th></tr>
+        <tr><td><code>customer_lookup</code></td><td>"What's Gerard Walsh's phone number?"</td><td>mongo_lookup only</td></tr>
+        <tr><td><code>po_lookup</code></td><td>"Show me PO-2026-P0042"</td><td>mongo_lookup only</td></tr>
+        <tr><td><code>quote_prediction</code></td><td>"How much for a boiler installation?"</td><td>predict_quote (graph + mongo + vector)</td></tr>
+        <tr><td><code>semantic_search</code></td><td>"Anyone asked about leaky taps recently?"</td><td>vector_search + mongo_lookup</td></tr>
+    </table>
+
+    <div class="outcome">
+        <div class="outcome-label">Why this matters for the chatbot</div>
+        Routing-before-retrieving avoids the common RAG mistake of always running every retriever for every query. A simple identity question takes one Mongo call (~10ms total). A pricing question takes four parallel calls (~80ms total). The user gets the right depth of search for their question without manual selection.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 6 ============ -->
+<section class="phase" style="--c:#A8B5C9; --c-dark:#3F4F66;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 6</div>
+            <h2>Streamlit chatbot UI</h2>
+        </div>
+        <div class="phase-date">1 May · ~2h</div>
+    </div>
+    <p class="phase-summary">The user-facing interface — a chat window that streams answers, exposes the retrieval evidence, and shows the predicted-quote breakdown live.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>app\streamlit_app.py</code> — page layout, sidebar, sample-query chips, two-column chat-plus-quote layout, system-status footer</li>
+    </ul>
+
+    <h3>UI features</h3>
+    <ul>
+        <li><strong>Two-tab layout</strong> — Dashboard tab (Phase 7) and Chatbot tab</li>
+        <li><strong>Sample query chips</strong> at the top of the chat — six pre-canned questions covering all four intents</li>
+        <li><strong>Predicted Quote panel</strong> on the right — auto-populates after any pricing question with materials breakdown, labour median, VAT, total, and benchmark against similar POs</li>
+        <li><strong>Sources expander</strong> under each assistant message — lists which stores were hit, the latency in milliseconds, the routing intent, and the raw routing JSON. This is the user-visible answer to Feldman et al.'s "RAGged Edges" critique: the user can verify retrieval quality, not just trust a confident answer</li>
+        <li><strong>Confidence colour-coding</strong> — high/medium/low rendered in sage/mustard/terracotta on the predicted quote, driven by <code>predict_quote</code>'s scoring</li>
+    </ul>
+
+    <div class="outcome">
+        <div class="outcome-label">How this serves the chatbot</div>
+        The Sources expander is a defensive design choice. When the boiler-quantity bug surfaced during testing — the graph had a wrong typical_quantity for one item, leading <code>predict_quote</code> to overestimate materials — the confidence score flagged it as "low confidence" and the Sources panel showed exactly which Neo4j edge was wrong. Users can audit retrievals, not just consume them.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 7 ============ -->
+<section class="phase" style="--c:#E8C5C5; --c-dark:#7A3F3F;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 7</div>
+            <h2>BI dashboard and evaluation set</h2>
+        </div>
+        <div class="phase-date">2 May · ~2h</div>
+    </div>
+    <p class="phase-summary">Add a business-intelligence page to the same Streamlit app, plus prepare a 20-question evaluation set with gold-standard answers.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>app\dashboard.py</code> — exposes <code>render_dashboard()</code>, called from the Dashboard tab in <code>streamlit_app.py</code></li>
+        <li><code>eval\eval_questions.json</code> — 20 questions with gold answers, evenly split across exact lookup (5), semantic paraphrase (5), multi-hop graph (5), and aggregation (5)</li>
+    </ul>
+
+    <h3>Dashboard contents</h3>
+    <ul>
+        <li><strong>Three KPI cards</strong> — Customers served, Total jobs value (inc VAT), Materials spend (POs)</li>
+        <li><strong>Trade filter (sidebar)</strong> — All / Plumber / Carpenter / Electrician, populated dynamically from <code>job_types.trade</code> distinct values</li>
+        <li><strong>Date range filter (sidebar)</strong> — defaults to all time, can be narrowed; respects <code>invoice_date</code></li>
+        <li><strong>Revenue trend chart</strong> — monthly revenue line chart, one series per trade</li>
+        <li><strong>Top 10 catalogue items</strong> — horizontal bar by total invoice value (terracotta)</li>
+        <li><strong>Activity by county</strong> — horizontal bar by revenue (sage gradient driven by invoice count)</li>
+    </ul>
+
+    <h3>Polyglot reasoning in the dashboard</h3>
+    <ul>
+        <li>The trade filter joins <code>invoices.job_type_id → job_types.job_type_id</code> and reads <code>trade</code> from the joined document — the source of truth — rather than the denormalised <code>invoices.trade</code> field</li>
+        <li>Top items chart traverses three collections: <code>invoice_items → invoices → job_types</code></li>
+        <li>Materials Spend KPI joins <code>pos.job_type → job_types</code> via an <code>$or</code> on both <code>job_type_id</code> and <code>job_name</code> (PDF extraction can return either)</li>
+    </ul>
+
+    <div class="outcome">
+        <div class="outcome-label">Why this matters for the rubric</div>
+        The dashboard satisfies the rubric's "Business Intelligence" line as a substantively different artefact from the RAG evaluation. KPIs and charts answer business-owner questions; the chatbot answers operational questions. Same data, different access patterns, two distinct deliverables.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 8 ============ -->
+<section class="phase" style="--c:#B8A48F; --c-dark:#5A4A38;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phase 8</div>
+            <h2>Evaluation runs</h2>
+        </div>
+        <div class="phase-date">3 May · ~2h</div>
+    </div>
+    <p class="phase-summary">Run baselines against the 20-question eval set, measure latency, and document failure modes.</p>
+
+    <h3>Files created</h3>
+    <ul>
+        <li><code>eval\run_baselines.py</code> — runs each of the 20 questions through three retrieval strategies and records hit/miss against the gold answer</li>
+        <li><code>eval\latency_p95.py</code> — instruments <code>answer_query</code> across 100 invocations, reports p50, p95, p99</li>
+        <li><code>eval\failure_taxonomy.md</code> — a hand-categorised list of the questions that failed and why</li>
+    </ul>
+
+    <h3>Baselines compared</h3>
+    <table>
+        <tr><th>Strategy</th><th>What it does</th><th>Recall@5 target</th></tr>
+        <tr><td>MongoDB <code>$text</code></td><td>Native keyword full-text search across documents</td><td>baseline</td></tr>
+        <tr><td>Vector RAG</td><td>Atlas Vector Search alone, no graph</td><td>~higher</td></tr>
+        <tr><td>DACARag full</td><td>Routed orchestrator: lookup + graph + vector</td><td>highest</td></tr>
+    </table>
+
+    <div class="outcome">
+        <div class="outcome-label">How this validates the architecture</div>
+        Comparing the three strategies on the same 20 questions makes the polyglot story concrete. Where vector alone misses (exact ID lookups, multi-hop graph questions), the routed orchestrator picks them up — that's the empirical justification for the three-store design.
+    </div>
+</section>
+
+
+<!-- ============ PHASE 9-11 condensed ============ -->
+<section class="phase" style="--c:#C9B47B; --c-dark:#5A4A1A;">
+    <div class="phase-header">
+        <div>
+            <div class="phase-num">Phases 9–11</div>
+            <h2>Report, slides, submission</h2>
+        </div>
+        <div class="phase-date">4–6 May</div>
+    </div>
+    <p class="phase-summary">Wrap up the deliverables: written report, 10-slide deck, demo rehearsal, submission.</p>
+
+    <h3>Files produced</h3>
+    <ul>
+        <li><code>docs\DACARag_CA_Report_long.docx</code> — the academic report covering motivation, architecture, implementation, BI, evaluation, limitations, future work</li>
+        <li><code>docs\slides.pptx</code> — 10 slides mirroring the report's structure with the autumn pastel palette</li>
+        <li><code>docs\architecture_diagram.html</code> — visual reference (already produced in Phase 5)</li>
+        <li><code>docs\screenshots\</code> — captures of the dashboard with All trades and per-trade filters, the chatbot answering each of the four intents, and a Neo4j subgraph in the Browser</li>
+    </ul>
+
+    <h3>Future-work flags raised</h3>
+    <ul>
+        <li><strong>Cross-encoder reranker</strong> — adding a BERT cross-encoder between vector retrieval and context assembly would address the vocabulary-sensitivity limitation noted in Phase 8 ("flickering lights" vs. "lights keep going on and off")</li>
+        <li><strong>Hybrid retrieval (BM25 + dense)</strong> — already foreshadowed by Rackauckas's RAG-Fusion citation</li>
+        <li><strong>Prompt-injection defences and PII redaction</strong> — flagged with a Shih and Chuang (2025) citation; out of scope for academic single-tenant deployment but essential for the future SaaS product</li>
+        <li><strong>RAGAS evaluation</strong> — framework citation added to validation section as a methodology gap to address in the 100% submission</li>
+    </ul>
+</section>
+
+
+<footer>
+    <p>DACARag · Polyglot RAG for Irish Trades · Kasia · CA Report May 2026</p>
+</footer>
+
+</div>
+</body>
+</html>

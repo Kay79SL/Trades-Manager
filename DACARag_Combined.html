@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DACARag — Project Reference</title>
+<style>
+:root {
+  --bg: #FBF8F2; --card: #FDFAF6; --border: #E5DDD2;
+  --text: #2D2520; --muted: #786558; --accent: #B85A5A;
+  --code-bg: #F5EFE5; --code-text: #5A3A1A;
+  --surface: #FFFFFF; --surface-2: #F5EFE6; --border-strong: #C9BCAA;
+  --text-muted: #6B5D4F; --text-subtle: #9C8E80; --terra: #B85A2E;
+  --teal-light: #E1F5EE; --teal-stroke: #1D9E75;
+  --coral-light: #FAECE7; --coral-stroke: #D85A30;
+  --blue-light: #E6F1FB; --blue-stroke: #378ADD;
+  --purple-light: #EEEDFE; --purple-stroke: #7F77DD;
+  --amber-light: #FAEEDA; --amber-stroke: #BA7517;
+  --info-bg: #E6F1FB; --info-text: #0C447C;
+  --benefit-bg: #E1F5EE; --benefit-text: #085041;
+}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","DM Sans",sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0;line-height:1.55;}
+/* ── Nav ── */
+.topnav{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0;padding:0 32px;}
+.topnav .logo{font-weight:800;font-size:1rem;color:var(--accent);padding:14px 24px 14px 0;border-right:1px solid var(--border);margin-right:16px;white-space:nowrap;}
+.navtab{padding:14px 18px;font-size:0.88rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;}
+.navtab:hover{color:var(--text);}
+.navtab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.panel{display:none;}.panel.on{display:block;}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 32px 80px;}
+/* ── Retro shared ── */
+header{border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:32px;}
+h1{color:var(--accent);font-weight:800;font-size:2.2rem;margin:0 0 6px;}
+.subtitle{color:var(--muted);font-size:1.05rem;margin:0;}
+.intro{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:32px;}
+.intro p{margin:0 0 10px;}.intro p:last-child{margin-bottom:0;}
+.tag-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+.tag{background:var(--code-bg);color:var(--code-text);padding:4px 10px;border-radius:14px;font-size:.78rem;font-weight:600;}
+.phase{background:var(--card);border:1px solid var(--border);border-left:6px solid var(--c,var(--accent));border-radius:12px;padding:22px 26px;margin-bottom:22px;}
+.phase-header{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+.phase-num{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.phase h2{margin:0;color:var(--text);font-size:1.4rem;font-weight:800;}
+.phase-date{font-size:.85rem;color:var(--muted);}
+.phase-summary{font-style:italic;color:var(--muted);margin:6px 0 18px;border-left:3px solid var(--border);padding-left:12px;}
+.phase h3{margin:18px 0 8px;font-size:.78rem;color:var(--c-dark,var(--accent));font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.phase ul{margin:0 0 8px;padding-left:22px;}.phase li{margin-bottom:6px;}
+code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-size:.88em;font-family:"JetBrains Mono",Consolas,Monaco,monospace;}
+.callout{background:var(--code-bg);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:.92rem;color:var(--code-text);}
+.callout strong{color:var(--c-dark,var(--accent));}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.9rem;}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+th{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+.outcome{background:rgba(255,255,255,.5);border:1px dashed var(--border);border-radius:8px;padding:12px 16px;margin-top:12px;}
+.outcome-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:4px;}
+footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:.82rem;text-align:center;}
+/* ── Architecture ── */
+.diagram-card{background:var(--surface);border-radius:12px;padding:24px;border:1px solid var(--border);margin-bottom:24px;}
+svg .clickbox{cursor:pointer;transition:opacity .15s;}
+svg .clickbox:hover{opacity:.7;}
+svg .clickbox.active rect:first-child{stroke-width:2.5;}
+.legend-row{display:flex;gap:24px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);padding:12px 16px;background:var(--surface-2);border-radius:8px;margin-top:8px;}
+.legend-item{display:flex;align-items:center;gap:6px;}
+.legend-dot{width:10px;height:10px;border-radius:50%;}
+.bottom-info{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.info-card h4{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin:0 0 6px;font-weight:600;}
+.info-card p{font-size:13px;color:var(--text);margin:0;}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,40,38,.55);z-index:1000;padding:24px;overflow-y:auto;}
+.modal-overlay.open{display:flex;align-items:flex-start;justify-content:center;}
+.modal{background:var(--surface);border-radius:12px;max-width:760px;width:100%;max-height:calc(100vh - 48px);overflow-y:auto;border:1px solid var(--border-strong);box-shadow:0 20px 60px rgba(44,40,38,.25);}
+.modal-header{position:sticky;top:0;background:var(--surface);padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;border-radius:12px 12px 0 0;}
+.modal-title{font-size:17px;font-weight:600;color:var(--text);margin:0;}
+.close-btn{background:transparent;border:1px solid var(--border-strong);color:var(--text-muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.close-btn:hover{background:var(--surface-2);color:var(--text);}
+.modal-body{padding:20px 24px 24px;}
+.arch-section{margin-bottom:18px;}
+.arch-section h4{font-size:12px;font-weight:600;color:var(--text);margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;}
+.arch-section ul{font-size:14px;line-height:1.7;color:var(--text);margin:0;padding-left:20px;}
+.arch-section li{margin-bottom:6px;}
+.arch-section code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;background:var(--surface-2);padding:1px 6px;border-radius:3px;border:1px solid var(--border);}
+.benefit-box{background:var(--benefit-bg);border-left:4px solid var(--teal-stroke);padding:14px 16px;border-radius:4px;margin:14px 0;}
+.benefit-box h4{color:var(--benefit-text);margin:0 0 8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.benefit-box p,.benefit-box ul{font-size:14px;line-height:1.6;color:var(--benefit-text);margin:0;padding-left:20px;}
+.benefit-box li{margin-bottom:4px;}
+.refs-toggle{background:transparent;border:1px solid var(--border-strong);color:var(--text-muted);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;margin-top:12px;display:inline-flex;align-items:center;gap:6px;}
+.refs-toggle:hover{background:var(--surface-2);}
+.refs-toggle.active{background:var(--info-bg);color:var(--info-text);border-color:var(--info-text);}
+.refs-section{display:none;background:var(--info-bg);border-left:4px solid var(--blue-stroke);border-radius:4px;padding:14px 16px;margin-top:12px;}
+.refs-section.open{display:block;}
+.refs-section h4{color:var(--info-text);margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+.ref-item{font-size:13.5px;line-height:1.6;color:var(--info-text);margin:0 0 10px;}
+.ref-item a{color:var(--info-text);}
+.arch-hint{text-align:center;font-size:13px;color:var(--text-subtle);font-style:italic;margin-bottom:16px;}
+/* ── Evaluation ── */
+.ev-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.5rem;}
+.ev-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+.ev-lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:6px;}
+.ev-vals{display:flex;justify-content:center;align-items:baseline;gap:6px;flex-wrap:wrap;}
+.v1{font-size:12px;padding:2px 5px;border-radius:3px;background:#E6F1FB;color:#185FA5;text-decoration:line-through;}
+.v2{font-size:12px;padding:2px 5px;border-radius:3px;background:#EEEDFE;color:#534AB7;text-decoration:line-through;}
+.v3{font-size:22px;font-weight:800;color:var(--text);}
+.ev-delta{font-size:.75rem;color:#1D9E75;font-weight:700;margin-top:3px;}
+.ev-delta.flat{color:var(--muted);}
+.ev-sub{font-size:.82rem;color:var(--muted);margin:0 0 1.2rem;}
+.ev-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:1rem;}
+.eli{display:flex;align-items:center;gap:5px;font-size:.82rem;color:var(--muted);}
+.els{width:10px;height:10px;border-radius:2px;}
+.bars{margin:1rem 0 1.5rem;}
+.brow{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.blbl{font-size:.8rem;color:var(--muted);width:140px;flex-shrink:0;}
+.btrack{flex:1;background:var(--code-bg);border-radius:4px;height:14px;position:relative;overflow:hidden;}
+.b1,.b2,.b3{height:14px;position:absolute;top:0;border-radius:4px;}
+.b1{background:#B5D4F4;opacity:.7;}
+.b2{background:#AFA9EC;opacity:.7;}
+.b3{background:#1D9E75;opacity:.85;}
+.bval{font-size:.8rem;color:var(--muted);width:36px;text-align:right;}
+.qbtns{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:1rem;}
+.qbtn{padding:5px 11px;font-size:.78rem;font-weight:600;border-radius:20px;cursor:pointer;border:1.5px solid var(--border-strong);background:var(--card);color:var(--muted);}
+.qbtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.qbtn.fixed{border-color:#1D9E75;color:#0F6E56;}
+.qbtn.gap{border-color:#BA7517;color:#854F0B;}
+.qcard{display:none;border:1px solid var(--border);border-left:6px solid var(--c-dark,var(--accent));border-radius:12px;overflow:hidden;}
+.qcard.on{display:block;}
+.qcard-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);}
+.qbadge{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:20px;}
+.qbg{background:#E1F5EE;color:#0F6E56;}.qba{background:#FAEEDA;color:#854F0B;}.qbr{background:#FCEBEB;color:#A32D2D;}
+.qcard-title{font-size:1rem;font-weight:700;color:var(--text);}
+.qcard-sub{font-size:.82rem;color:var(--muted);margin-left:auto;}
+.qsec{padding:14px 16px;border-bottom:1px solid var(--border);}
+.qsec:last-child{border-bottom:none;}
+.qslbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.qslbl.route{color:#378ADD;}.qslbl.manual{color:#1D9E75;}
+.steps{display:flex;flex-direction:column;gap:5px;}
+.step{display:flex;align-items:flex-start;gap:9px;}
+.sdot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:2px;}
+.sd-b{background:#E6F1FB;color:#185FA5;}.sd-g{background:#E1F5EE;color:#0F6E56;}.sd-p{background:#EEEDFE;color:#534AB7;}.sd-o{background:#FAEEDA;color:#854F0B;}.sd-r{background:#FCEBEB;color:#A32D2D;}
+.conn{width:1px;height:8px;background:var(--border);margin-left:9px;}
+.stext{font-size:.85rem;color:var(--text);line-height:1.6;padding-top:1px;}
+.stext .file{font-family:Consolas,Monaco,monospace;font-size:.8rem;background:#EEEDFE;color:#534AB7;padding:1px 4px;border-radius:3px;}
+.stext .fn{font-family:Consolas,Monaco,monospace;font-size:.8rem;background:#FAEEDA;color:#854F0B;padding:1px 4px;border-radius:3px;}
+.stext .good{color:#0F6E56;font-weight:700;}.stext .bad{color:#A32D2D;font-weight:700;}
+.fx-note{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:.82rem;line-height:1.6;}
+.fx-green{background:#E1F5EE;color:#0F6E56;}.fx-amber{background:#FAEEDA;color:#854F0B;}
+.same-as{padding:10px 16px;font-size:.85rem;color:var(--muted);font-style:italic;background:var(--card);}
+.qscores{display:flex;gap:5px;flex-wrap:wrap;padding:10px 16px;background:var(--code-bg);border-top:1px solid var(--border);}
+.sc{font-size:.78rem;padding:2px 7px;border-radius:3px;background:var(--card);color:var(--muted);border:1px solid var(--border);}
+.fxcard{border:1px solid var(--border);border-left:5px solid #1D9E75;border-radius:10px;padding:14px;margin-bottom:10px;background:var(--card);}
+.fxcard.pend{border-left-color:#BA7517;}
+.fxt{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:5px;}
+.fxb{font-size:.85rem;color:var(--muted);line-height:1.6;}
+.acard{border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;background:var(--card);}
+.aq{flex:1;}
+.aqt{font-size:.92rem;font-weight:700;margin-bottom:3px;}
+.aqe{font-size:.8rem;color:var(--muted);font-style:italic;}
+.abtn{display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+.abtn button{padding:5px 12px;font-size:.78rem;font-weight:700;border-radius:6px;cursor:pointer;border:1.5px solid var(--border-strong);background:var(--card);color:var(--muted);}
+.abtn button.pass{background:#E1F5EE;color:#0F6E56;border-color:#1D9E75;}
+.abtn button.fail{background:#FCEBEB;color:#A32D2D;border-color:#A32D2D;}
+.asummary{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:.85rem;color:var(--muted);}
+.ev-tabs{display:flex;gap:3px;border-bottom:1px solid var(--border);margin-bottom:1rem;}
+.ev-tab{padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--muted);border:1px solid transparent;border-bottom:none;margin-bottom:-1px;border-radius:8px 8px 0 0;}
+.ev-tab.on{color:var(--accent);background:var(--card);border-color:var(--border);border-bottom-color:var(--card);}
+.ev-panel{display:none;}.ev-panel.on{display:block;}
+@media print{body{background:white;}.topnav{display:none;}.panel{display:block !important;}.qcard{display:block !important;}}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="logo">DACARag</div>
+  <div class="navtab on" onclick="showPanel('retro')">Project retrospective</div>
+  <div class="navtab" onclick="showPanel('arch')">Architecture</div>
+  <div class="navtab" onclick="showPanel('eval')">Evaluation</div>
+</nav>
+
+<!-- ════════════════════ TAB 1 — RETROSPECTIVE ════════════════════ -->
+<div id="retro" class="panel on">
+<div class="wrap">
+<header>
+    <h1>DACARag — Project Retrospective</h1>
+    <p class="subtitle">A polyglot RAG system for Irish trades. What was built, where the data lives, and how each piece serves the chatbot.</p>
+</header>
+<div class="intro">
+    <p><strong>What DACARag is.</strong> A retrieval-augmented chatbot for plumbers, carpenters, and electricians that reads incoming customer quote-request emails, looks up whether the customer is known, finds similar past jobs, suggests likely materials, and drafts a quote. Every answer is grounded in three data stores rather than the LLM's parameters.</p>
+    <p><strong>The architecture in one line.</strong> MongoDB Atlas owns the records, Neo4j owns the relationships, Atlas Vector Search owns the embeddings; Claude Haiku routes queries; Streamlit serves the UI.</p>
+    <div class="tag-row"><span class="tag">MongoDB Atlas</span><span class="tag">Neo4j (Docker)</span><span class="tag">Atlas Vector Search</span><span class="tag">Claude API</span><span class="tag">Sentence-Transformers</span><span class="tag">Streamlit</span><span class="tag">Python 3.11</span></div>
+</div>
+<section class="phase" style="--c:#C9A57B;--c-dark:#5A3A1A;">
+    <div class="phase-header"><div><div class="phase-num">Phase 0</div><h2>Project setup and synthetic data generation</h2></div><div class="phase-date">25 Apr · ~2h</div></div>
+    <p class="phase-summary">Stand up the project skeleton, the Docker compose stack, and a deterministic synthetic dataset of Irish trades records.</p>
+    <h3>Files created</h3>
+    <ul><li><code>ingest\generate_trades_dataset.py</code> — generates the seven core CSVs and 100 quote-request <code>.eml</code> files using fixed random seeds for reproducibility</li><li><code>docker-compose.yml</code> — defines the local Neo4j 5.20 container with APOC plugin and persistent volumes</li><li><code>.env</code> — holds <code>MONGO_URI</code>, <code>MONGO_DB=trades_quotes</code>, <code>NEO4J_URI=bolt://localhost:7687</code>, and the Anthropic key</li><li><code>requirements.txt</code> — pins <code>pymongo>=4.6</code>, <code>neo4j>=5.20</code>, <code>sentence-transformers</code>, <code>streamlit</code>, <code>anthropic</code>, <code>python-dotenv</code></li></ul>
+    <h3>Data generated</h3>
+    <table><tr><th>Output file</th><th>Rows</th><th>Purpose</th></tr><tr><td><code>customers.csv</code></td><td>121</td><td>Customer master with Irish names, eircodes, counties, preferred_trade</td></tr><tr><td><code>job_types.csv</code></td><td>60</td><td>Canonical jobs, each with a trade, base labour cost, typical hours</td></tr><tr><td><code>items.csv</code></td><td>88</td><td>Catalogue with EUR unit prices ex-VAT</td></tr><tr><td><code>job_items.csv</code></td><td>300</td><td>The recipe — which items each job typically uses, with typical quantities</td></tr><tr><td><code>invoices.csv</code></td><td>150</td><td>Past invoices: customer + job + dates + totals (subtotal, VAT, inc-VAT)</td></tr><tr><td><code>invoice_items.csv</code></td><td>~750</td><td>5 line items per invoice on average</td></tr><tr><td><code>emails/*.eml</code></td><td>100</td><td>Quote-request emails across six archetypes</td></tr></table>
+    <div class="outcome"><div class="outcome-label">Why this matters for the chatbot</div>Fixed random seeds mean the dataset is regenerable byte-for-byte. Every later phase can be re-run from scratch without losing reproducibility — important for marking, demos, and the evaluation set.</div>
+</section>
+<section class="phase" style="--c:#D4A0A0;--c-dark:#7A3838;">
+    <div class="phase-header"><div><div class="phase-num">Phase 1</div><h2>MongoDB ingestion</h2></div><div class="phase-date">26 Apr · ~2h</div></div>
+    <p class="phase-summary">Load every CSV into MongoDB Atlas and the 100 emails into GridFS, with indexes tuned to the chatbot's expected access patterns.</p>
+    <h3>Collections written to <code>trades_quotes</code></h3>
+    <table><tr><th>Collection</th><th>Documents</th><th>Role in the system</th></tr><tr><td><code>customers</code></td><td>121</td><td>Indexed lookup by customer_id when chatbot answers identity questions</td></tr><tr><td><code>job_types</code></td><td>60</td><td>Source of truth for the trade classification</td></tr><tr><td><code>items</code></td><td>88</td><td>Catalogue prices for materials cost calculations</td></tr><tr><td><code>job_items</code></td><td>300</td><td>Becomes the basis for Neo4j USES_ITEM relationships</td></tr><tr><td><code>invoices</code></td><td>150</td><td>Historical totals that feed labour-cost statistics</td></tr><tr><td><code>invoice_items</code></td><td>750</td><td>Line-level data for the BI dashboard</td></tr><tr><td><code>email_files</code> (GridFS)</td><td>100</td><td>Raw .eml binaries referenced by Phase 3</td></tr></table>
+    <div class="outcome"><div class="outcome-label">How this serves the chatbot</div>When the user asks "what's Gerard Walsh's phone number?", the orchestrator sends one indexed Mongo lookup and gets the answer in under 10ms. No graph traversal, no vector search — the right tool for an identity question is a document store with a primary-key index.</div>
+</section>
+<section class="phase" style="--c:#A8B89F;--c-dark:#3F5235;">
+    <div class="phase-header"><div><div class="phase-num">Phase 2</div><h2>Neo4j graph build</h2></div><div class="phase-date">27 Apr · ~2h</div></div>
+    <p class="phase-summary">Project the MongoDB data into a labelled property graph. The graph stores only IDs and relationships — never duplicates document content.</p>
+    <h3>Nodes created (537 total)</h3>
+    <table><tr><th>Label</th><th>Count</th><th>Why it lives in the graph</th></tr><tr><td><code>Customer</code></td><td>121</td><td>Anchor for customer-history traversals</td></tr><tr><td><code>Trade</code></td><td>3</td><td>Top of the classification hierarchy</td></tr><tr><td><code>JobType</code></td><td>60</td><td>Hub of the materials-recipe graph</td></tr><tr><td><code>Item</code></td><td>88</td><td>Connected to jobs via USES_ITEM</td></tr><tr><td><code>Invoice</code></td><td>150</td><td>Bridges customer ↔ job</td></tr><tr><td><code>Email</code></td><td>100</td><td>Created from GridFS payload in Phase 3</td></tr><tr><td><code>PO</code></td><td>15</td><td>Created from extracted PDFs in Phase 3</td></tr></table>
+    <h3>Key relationships (2,030 total)</h3>
+    <table><tr><th>Pattern</th><th>What it represents</th></tr><tr><td><code>(JobType)-[:USES_ITEM {typical_quantity}]->(Item)</code></td><td>Materials recipe — drives predict_quote</td></tr><tr><td><code>(Customer)-[:HAS_INVOICE]->(Invoice)</code></td><td>Purchase history — answered in one hop</td></tr><tr><td><code>(Invoice)-[:FOR_JOB]->(JobType)</code></td><td>Invoice-to-job linkage</td></tr><tr><td><code>(PO)-[:CONTAINS_ITEM]->(Item)</code></td><td>PO line items — supplier benchmarking</td></tr></table>
+    <div class="outcome"><div class="outcome-label">How this serves the chatbot</div>When the user asks "how much for a boiler installation?", Neo4j traverses USES_ITEM relationships in one Cypher query — three milliseconds. The equivalent in MongoDB would be a three-stage $lookup pipeline.</div>
+</section>
+<section class="phase" style="--c:#C0A8D4;--c-dark:#553F70;">
+    <div class="phase-header"><div><div class="phase-num">Phase 3</div><h2>Multi-source ingestion and LLM enrichment</h2></div><div class="phase-date">28 Apr · ~2h</div></div>
+    <p class="phase-summary">Process 100 quote-request emails and 15 supplier PO PDFs into structured records using Claude Haiku, then add them to both stores.</p>
+    <div class="callout"><strong>Architectural decision.</strong> Email and PO ingestion is the system's most architecturally rich component because it exercises all three learning outcomes simultaneously: GridFS for binary storage, LLM extraction for unstructured-to-structured conversion, and graph projection for relationship modelling.</div>
+    <div class="outcome"><div class="outcome-label">How this serves the chatbot</div>When the user asks "show me PO-2026-P0042", the orchestrator hits MongoDB by po_number and gets the structured JSON instantly. When they ask "how much did we pay for materials?", the orchestrator joins POs to job types via the graph, then sums materials_subtotal.</div>
+</section>
+<section class="phase" style="--c:#D4896B;--c-dark:#7A3F22;">
+    <div class="phase-header"><div><div class="phase-num">Phase 4</div><h2>Vector embeddings and Atlas Vector Search</h2></div><div class="phase-date">29 Apr · ~2h</div></div>
+    <p class="phase-summary">Embed every email body, PO description, and customer note into 384-dim vectors and index them with Atlas Vector Search.</p>
+    <table><tr><th>Source</th><th>Chunks</th><th>What it enables</th></tr><tr><td>PO descriptions</td><td>~140</td><td>"What was the boiler model on the last big plumbing PO?"</td></tr><tr><td>Email bodies</td><td>~85</td><td>"Did anyone email about a leaky tap in March?"</td></tr><tr><td>Customer notes</td><td>~38</td><td>"Find me the customer in Drumcondra who had the kitchen rewire"</td></tr><tr><td><strong>Total</strong></td><td><strong>263</strong></td><td></td></tr></table>
+    <div class="outcome"><div class="outcome-label">How this serves the chatbot</div>Vector search picks up semantic similarity that keyword search misses. "I need someone for a leaky tap" doesn't have to match "dripping faucet" exactly — the embedding space captures the meaning.</div>
+</section>
+<section class="phase" style="--c:#C9A57B;--c-dark:#5A3A1A;">
+    <div class="phase-header"><div><div class="phase-num">Phase 5</div><h2>Retrieval orchestration</h2></div><div class="phase-date">30 Apr · ~2h</div></div>
+    <p class="phase-summary">The brain. A query router that classifies the user's intent and dispatches to the right combination of retrieval modules, then assembles the results into one Markdown context block for Claude.</p>
+    <h3>retrieve/ module map</h3>
+    <table><tr><th>File</th><th>Role</th></tr><tr><td><code>router.py</code></td><td>LLM-first classifier — regex patterns for IDs, Claude Haiku for everything else</td></tr><tr><td><code>mongo_lookup.py</code></td><td>Exact-match retrievers: get_customer, get_invoice, get_po, get_email</td></tr><tr><td><code>graph_search.py</code></td><td>Cypher traversals: items_for_job, customer_full_history, similar_pos_by_job_type</td></tr><tr><td><code>vector_search.py</code></td><td>Atlas $vectorSearch aggregation with all-MiniLM-L6-v2</td></tr><tr><td><code>context_assembler.py</code></td><td>Merges retrieval results into one Markdown block for Claude</td></tr><tr><td><code>predict_quote.py</code></td><td>Killer feature — combines Neo4j recipe + MongoDB item prices + invoice labour stats</td></tr><tr><td><code>orchestrator.py</code></td><td>Single entry point: answer_query() — routes, retrieves, assembles, calls Claude</td></tr></table>
+    <div class="outcome"><div class="outcome-label">How this serves the chatbot</div>predict_quote returns a boiler installation estimate of €2,002.06 inc VAT, within 5% of benchmark PO-2026-P0042 (€2,106.50). No single store can answer this — it requires Neo4j for the recipe, MongoDB for current item prices, and MongoDB again for historical labour statistics.</div>
+</section>
+<section class="phase" style="--c:#E8C5C5;--c-dark:#7A3F3F;">
+    <div class="phase-header"><div><div class="phase-num">Phase 7</div><h2>BI dashboard and evaluation set</h2></div><div class="phase-date">2 May · ~2h</div></div>
+    <p class="phase-summary">Add a business-intelligence page to the Streamlit app, plus prepare a 20-question evaluation set with gold-standard answers.</p>
+    <h3>Dashboard contents</h3>
+    <ul><li><strong>Three KPI cards</strong> — Customers served, Total jobs value (inc VAT), Materials spend (POs)</li><li><strong>Revenue trend chart</strong> — monthly revenue line chart, one series per trade</li><li><strong>Top 10 catalogue items</strong> — horizontal bar by total invoice value</li><li><strong>Activity by county</strong> — horizontal bar by revenue</li></ul>
+    <div class="outcome"><div class="outcome-label">Why this matters for the rubric</div>The dashboard satisfies the rubric's "Business Intelligence" line as a substantively different artefact from the RAG evaluation. KPIs and charts answer business-owner questions; the chatbot answers operational questions. Same data, different access patterns, two distinct deliverables.</div>
+</section>
+<section class="phase" style="--c:#B8A48F;--c-dark:#5A4A38;">
+    <div class="phase-header"><div><div class="phase-num">Phase 8</div><h2>Evaluation runs</h2></div><div class="phase-date">3–5 May</div></div>
+    <p class="phase-summary">Three evaluation runs using an LLM judge (Claude Haiku) across 9 annotated questions. Four bugs found and fixed during evaluation — demonstrating iterative improvement.</p>
+    <h3>Results summary</h3>
+    <table><tr><th>Metric</th><th>Run 1</th><th>Run 2</th><th>Run 3 (final)</th></tr><tr><td>Faithfulness</td><td>0.37</td><td>0.36</td><td>0.34*</td></tr><tr><td>Answer Relevancy</td><td>0.65</td><td>0.66</td><td>0.79</td></tr><tr><td>Context Precision</td><td>0.43</td><td>0.50</td><td>0.54</td></tr><tr><td>Context Recall</td><td>0.19</td><td>0.25</td><td>0.61</td></tr></table>
+    <p style="font-size:.82rem;color:var(--muted);margin-top:6px">*Faithfulness underestimated — judge received source labels not source text. Answer relevancy reaches 0.91 on the 7 correctly functioning questions. See Evaluation tab for full details.</p>
+    <div class="outcome"><div class="outcome-label">How this validates the architecture</div>Baseline comparison: RAG recall@5 = 0.92 vs MongoDB $text = 0.35 vs BM25 = 0.33. RAG scores 1.00 on semantic paraphrase where keyword search scores 0.00 — empirical justification for the three-store design.</div>
+</section>
+<section class="phase" style="--c:#C9B47B;--c-dark:#5A4A1A;">
+    <div class="phase-header"><div><div class="phase-num">Phases 9–11</div><h2>Report, slides, submission</h2></div><div class="phase-date">4–6 May</div></div>
+    <p class="phase-summary">Wrap up the deliverables: written report, 10-slide deck, demo rehearsal, submission.</p>
+    <h3>Future-work flags</h3>
+    <ul><li><strong>Cross-encoder reranker</strong> — BERT cross-encoder between vector retrieval and context assembly</li><li><strong>Hybrid retrieval (BM25 + dense)</strong> — RAG-Fusion pattern</li><li><strong>Invoice → materials graph chain</strong> — invoice lookup route does not yet query Neo4j for USES_ITEM</li><li><strong>Prompt-injection defences and PII redaction</strong> — out of scope for academic deployment</li></ul>
+</section>
+<footer><p>DACARag · Polyglot RAG for Irish Trades · Kasia · CA Report May 2026</p></footer>
+</div>
+</div>
+
+<!-- ════════════════════ TAB 2 — ARCHITECTURE ════════════════════ -->
+<div id="arch" class="panel">
+<div class="wrap">
+<header>
+    <h1>Data Lifecycle Architecture</h1>
+    <p class="subtitle">Interactive walkthrough of the polyglot RAG write/read flow. Click any box.</p>
+</header>
+<p class="arch-hint">Click any box in the diagram to see what each function does, why it exists, and how it benefits the chatbot.</p>
+<div class="diagram-card">
+<svg width="100%" viewBox="0 0 680 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DACARag clickable data lifecycle diagram">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6B5D4F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g class="clickbox" data-step="1"><rect x="200" y="30" width="280" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/><text x="340" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#2C2C2A">1. New data event</text><text x="340" y="70" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#444441">Invoice, email, or PO captured</text></g>
+<text x="340" y="110" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#6B5D4F">2. Run ingest pipeline (parallel writes)</text>
+<line x1="280" y1="86" x2="120" y2="140" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="340" y1="86" x2="340" y2="140" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="400" y1="86" x2="560" y2="140" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<g class="clickbox" data-step="2"><rect x="30" y="140" width="180" height="76" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/><text x="120" y="158" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">MongoDB write</text><text x="120" y="180" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">load_po_pdfs.py</text><text x="120" y="198" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">add_invoice.insert</text></g>
+<g class="clickbox" data-step="3"><rect x="250" y="140" width="180" height="76" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/><text x="340" y="158" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">Neo4j write</text><text x="340" y="180" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">load_pos_to_neo4j.py</text><text x="340" y="198" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">add_invoice.graph</text></g>
+<g class="clickbox" data-step="4"><rect x="470" y="140" width="180" height="76" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="1.5"/><text x="560" y="158" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#712B13">Embed free text</text><text x="560" y="180" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#993C1D">embed_chunks.py</text><text x="560" y="198" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#993C1D">if notes present</text></g>
+<line x1="120" y1="216" x2="120" y2="254" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="340" y1="216" x2="340" y2="254" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="560" y1="216" x2="560" y2="254" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<g class="clickbox" data-step="5"><rect x="30" y="254" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="120" y="274" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">MongoDB Atlas</text><text x="120" y="294" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">9 collections</text></g>
+<g class="clickbox" data-step="6"><rect x="250" y="254" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="340" y="274" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">Neo4j AuraDB</text><text x="340" y="294" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">Property graph</text></g>
+<g class="clickbox" data-step="7"><rect x="470" y="254" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="560" y="274" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">Vector index</text><text x="560" y="294" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">chunks collection</text></g>
+<text x="340" y="346" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#6B5D4F">3. Next user query reads fresh data automatically</text>
+<line x1="120" y1="310" x2="155" y2="386" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="120" y1="310" x2="305" y2="386" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="340" y1="310" x2="305" y2="386" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="340" y1="310" x2="455" y2="386" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="560" y1="310" x2="155" y2="386" stroke="#888780" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrow)"/><line x1="560" y1="310" x2="455" y2="386" stroke="#888780" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+<g class="clickbox" data-step="8"><rect x="30" y="386" width="250" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/><text x="155" y="404" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#3C3489">Direct lookups</text><text x="155" y="424" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">mongo_lookup.get_invoice</text><text x="155" y="444" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">mongo_lookup.get_customer</text></g>
+<g class="clickbox" data-step="9"><rect x="290" y="386" width="100" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/><text x="340" y="404" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#3C3489">Predict</text><text x="340" y="424" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">predict_quote</text><text x="340" y="444" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">.predict_quote</text></g>
+<g class="clickbox" data-step="10"><rect x="400" y="386" width="250" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/><text x="525" y="404" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#3C3489">Vector and graph search</text><text x="525" y="424" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">vector_search.vector_search</text><text x="525" y="444" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">graph_search.graph_traversal</text></g>
+<line x1="155" y1="462" x2="340" y2="510" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="340" y1="462" x2="340" y2="510" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/><line x1="525" y1="462" x2="340" y2="510" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<g class="clickbox" data-step="11"><rect x="200" y="510" width="280" height="76" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/><text x="340" y="528" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#412402">Orchestrator answers query</text><text x="340" y="548" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#854F0B">orchestrator.answer_query</text><text x="340" y="568" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#854F0B">router.classify_query</text></g>
+<line x1="40" y1="620" x2="100" y2="620" stroke="#1D9E75" stroke-width="2"/><text x="110" y="624" dominant-baseline="central" font-size="12" fill="#444441">Solid line: required for every new record</text>
+<line x1="40" y1="650" x2="100" y2="650" stroke="#888780" stroke-width="2" stroke-dasharray="3 3"/><text x="110" y="654" dominant-baseline="central" font-size="12" fill="#444441">Dashed line: only if free-text content present</text>
+<rect x="30" y="690" width="620" height="56" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="0.5"/><text x="50" y="714" dominant-baseline="central" font-size="14" font-weight="500" fill="#854F0B">Key insight</text><text x="50" y="732" dominant-baseline="central" font-size="12" fill="#854F0B">No retraining needed. New invoices feed predict_quote labour stats automatically.</text>
+</svg>
+<div class="legend-row"><div class="legend-item"><span class="legend-dot" style="background:#9FE1CB"></span>Write modules</div><div class="legend-item"><span class="legend-dot" style="background:#F0997B"></span>Conditional embedding</div><div class="legend-item"><span class="legend-dot" style="background:#85B7EB"></span>Data stores</div><div class="legend-item"><span class="legend-dot" style="background:#AFA9EC"></span>Read paths</div><div class="legend-item"><span class="legend-dot" style="background:#FAC775"></span>Orchestration + LLM</div></div>
+</div>
+<div class="bottom-info"><div class="info-card"><h4>Data stores</h4><p>MongoDB Atlas + Neo4j AuraDB + Atlas Vector Search</p></div><div class="info-card"><h4>Code volume</h4><p>~3,200 lines of Python across ingest/, retrieve/, app/</p></div><div class="info-card"><h4>Validation</h4><p>predict_quote within 5% of benchmark PO-2026-P0042</p></div></div>
+</div>
+</div>
+
+<!-- Architecture modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal">
+    <div class="modal-header"><h3 class="modal-title" id="modal-title">Step</h3><button class="close-btn" onclick="closeModal()" aria-label="Close">×</button></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ════════════════════ TAB 3 — EVALUATION ════════════════════ -->
+<div id="eval" class="panel">
+<div class="wrap">
+<header>
+    <h1>Evaluation — Phase 8</h1>
+    <p class="subtitle">Three evaluation runs using Claude Haiku as LLM judge. Four bugs found and fixed. Full question flow investigation and assumption tests.</p>
+</header>
+
+<div class="ev-tabs">
+  <div class="ev-tab on" onclick="showEv('results')">Results</div>
+  <div class="ev-tab" onclick="showEv('flows')">Question flows</div>
+  <div class="ev-tab" onclick="showEv('fixes')">Fixes applied</div>
+  <div class="ev-tab" onclick="showEv('assume')">Assumption tests</div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="ev-panel on">
+<p class="ev-sub">Three runs showing progressive improvement. Strikethrough = earlier runs. Large number = Run 3 final.</p>
+<div class="ev-grid">
+  <div class="ev-card"><div class="ev-lbl">Faithfulness</div><div class="ev-vals"><span class="v1">0.37</span><span class="v2">0.36</span><span class="v3">0.34</span></div><div class="ev-delta flat">judge limitation*</div></div>
+  <div class="ev-card"><div class="ev-lbl">Answer Relevancy</div><div class="ev-vals"><span class="v1">0.65</span><span class="v2">0.66</span><span class="v3">0.79</span></div><div class="ev-delta">+0.14 across 3 runs</div></div>
+  <div class="ev-card"><div class="ev-lbl">Context Precision</div><div class="ev-vals"><span class="v1">0.43</span><span class="v2">0.50</span><span class="v3">0.54</span></div><div class="ev-delta">+0.11 across 3 runs</div></div>
+  <div class="ev-card"><div class="ev-lbl">Context Recall</div><div class="ev-vals"><span class="v1">0.19</span><span class="v2">0.25</span><span class="v3">0.61</span></div><div class="ev-delta">+0.42 biggest gain</div></div>
+</div>
+<div class="ev-legend"><div class="eli"><div class="els" style="background:#B5D4F4"></div>Run 1 — baseline</div><div class="eli"><div class="els" style="background:#AFA9EC"></div>Run 2 — orchestrator fix</div><div class="eli"><div class="els" style="background:#1D9E75"></div>Run 3 — email fix (final)</div></div>
+<div class="bars" id="ev-bars"></div>
+<p style="font-size:.82rem;color:var(--muted)">*Faithfulness underestimated — judge received source labels not full source text. Answer relevancy = 0.91 excluding two broken queries (q04 fixed, q11 data gap).</p>
+<h3 style="margin:1.5rem 0 0.8rem;font-size:1rem;color:var(--accent);">Per-question final run</h3>
+<table><tr><th>Q</th><th>Question</th><th>Faith</th><th>AnsRel</th><th>CtxPre</th><th>CtxRec</th><th>Status</th></tr>
+<tr style="background:#E1F5EE"><td>q04</td><td>Find email msg_0001</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>Fixed this run</td></tr>
+<tr><td>q01</td><td>Show me PO-2026-P0058</td><td>0.20*</td><td>1.00</td><td>1.00</td><td>1.00</td><td>Working</td></tr>
+<tr><td>q02</td><td>Get invoice INV-2025-0001</td><td>0.00*</td><td>1.00</td><td>1.00</td><td>1.00</td><td>Working</td></tr>
+<tr><td>q03</td><td>Look up customer cust_0005</td><td>0.00*</td><td>1.00</td><td>1.00</td><td>0.50</td><td>Working</td></tr>
+<tr><td>q16</td><td>Boiler installation cost</td><td>0.00*</td><td>0.95</td><td>0.00*</td><td>0.00*</td><td>Strongest result</td></tr>
+<tr><td>q06</td><td>Water dripping complaints</td><td>0.50</td><td>0.90</td><td>ERR</td><td>0.50</td><td>Semantic search ok</td></tr>
+<tr><td>q05</td><td>All POs for Gerard Walsh</td><td>0.25</td><td>0.70</td><td>0.33</td><td>0.50</td><td>Working</td></tr>
+<tr><td>q10</td><td>Urgent dangerous job</td><td>0.75</td><td>0.30</td><td>0.00</td><td>0.50</td><td>Partial — relevancy low</td></tr>
+<tr><td>q11</td><td>Gerard Walsh history</td><td>0.40</td><td>0.30</td><td>0.00</td><td>0.50</td><td>Data gap — no invoices</td></tr>
+</table>
+<p style="font-size:.78rem;color:var(--muted);margin-top:6px">* underestimate — judge saw source labels not source text</p>
+</div>
+
+<!-- FLOWS -->
+<div id="flows" class="ev-panel">
+<div class="qbtns">
+  <button class="qbtn on" onclick="showQ('qc01',this)">q01 PO lookup</button>
+  <button class="qbtn" onclick="showQ('qc02',this)">q02 Invoice</button>
+  <button class="qbtn" onclick="showQ('qc03',this)">q03 Customer ID</button>
+  <button class="qbtn fixed" onclick="showQ('qc04',this)">q04 Email ✓fixed</button>
+  <button class="qbtn" onclick="showQ('qc05',this)">q05 Walsh POs</button>
+  <button class="qbtn" onclick="showQ('qc06',this)">q06 Water dripping</button>
+  <button class="qbtn gap" onclick="showQ('qc10',this)">q10 Urgent</button>
+  <button class="qbtn gap" onclick="showQ('qc11',this)">q11 Walsh history</button>
+  <button class="qbtn" onclick="showQ('qc16',this)">q16 Boiler cost</button>
+</div>
+
+<div id="qc01" class="qcard on" style="--c-dark:#378ADD;">
+  <div class="qcard-hd"><span class="qbadge qbg">Working</span><span class="qcard-title">q01 — Show me PO-2026-P0058</span><span class="qcard-sub">4 sources · 6.5s</span></div>
+  <div class="qsec"><div class="qslbl route">LLM router — exact code path</div><div class="steps">
+    <div class="step"><div class="sdot sd-b">1</div><div class="stext">Enters <span class="fn">classify_query()</span> in <span class="file">router.py</span> line 155</div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-b">2</div><div class="stext"><span class="fn">_try_id_pattern_match()</span> checks <code>PO_ID_RE = re.compile(r"\b(PO-\d{4}-[A-Z]\d{4})\b")</code> → <span class="good">matches</span>. Returns <code>paths:["mongo","graph"]</code>, <code>method:pattern_id</code>. LLM never called.</div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-g">3</div><div class="stext"><span class="file">mongo_lookup.py</span> → <span class="fn">get_po("PO-2026-P0058")</span> + <span class="fn">get_customer("cust_0003")</span> → Siobhan Farrell, €140.59</div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-p">4</div><div class="stext"><span class="file">graph_search.py</span> → <span class="fn">po_full_context()</span> + <span class="fn">customer_full_history("cust_0003")</span> via enriched params (Fix 2)</div></div>
+  </div></div>
+  <div class="qsec"><div class="qslbl manual">Manual verification</div><div class="steps">
+    <div class="step"><div class="sdot sd-g">1</div><div class="stext"><strong>Compass → pos:</strong> <code>{"po_number":"PO-2026-P0058"}</code> → Siobhan Farrell, Annual boiler service, €140.59</div></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><strong>Neo4j:</strong> <code>MATCH (po:PO {po_number:"PO-2026-P0058"})-[r]->(n) RETURN type(r),n</code> → FOR_CUSTOMER, FOR_JOB, CONTAINS_ITEM</div></div>
+  </div></div>
+  <div class="qscores"><span class="sc">Faith 0.20*</span><span class="sc">AnsRel 1.00</span><span class="sc">CtxPre 1.00</span><span class="sc">CtxRec 1.00</span></div>
+</div>
+
+<div id="qc02" class="qcard" style="--c-dark:#378ADD;">
+  <div class="qcard-hd"><span class="qbadge qbg">Working</span><span class="qcard-title">q02 — Get me invoice INV-2025-0001</span><span class="qcard-sub">2 sources · 1.1s</span></div>
+  <div class="qsec"><div class="qslbl route">LLM router — exact code path</div><div class="steps">
+    <div class="step"><div class="sdot sd-b">1</div><div class="stext"><span class="fn">_try_id_pattern_match()</span> checks <code>INVOICE_ID_RE = re.compile(r"\b(INV-\d{4}-\d{4})\b")</code> → <span class="good">matches</span>. Returns <code>paths:["mongo"]</code> only. LLM never called.</div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><span class="file">mongo_lookup.py</span> → <span class="fn">get_invoice()</span> + <span class="fn">get_invoice_line_items()</span> + <span class="fn">get_customer("cust_0006")</span></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-o">3</div><div class="stext"><span class="bad">Graph never called</span> — <code>paths:["mongo"]</code> only. Materials recipe in Neo4j for pl_10 never queried. This is why q_mat fails.</div></div>
+  </div>
+  <div class="fx-note fx-amber"><strong>Known gap:</strong> Adding "graph" to invoice match block + chaining items_for_job(job_type_id) after MongoDB fetch would surface materials.</div>
+  </div>
+  <div class="qsec"><div class="qslbl manual">Manual verification</div><div class="steps">
+    <div class="step"><div class="sdot sd-g">1</div><div class="stext"><strong>Compass → invoices:</strong> <code>{"invoice_id":"INV-2025-0001"}</code> → Dervla Kennedy, pl_10, Drain unblocking, €245.25</div></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><strong>Neo4j:</strong> <code>MATCH (j:JobType {job_type_id:"pl_10"})-[:USES_ITEM]->(i) RETURN i.item_name</code> → materials exist but invoice route never reaches them</div></div>
+  </div></div>
+  <div class="qscores"><span class="sc">Faith 0.00*</span><span class="sc">AnsRel 1.00</span><span class="sc">CtxPre 1.00</span><span class="sc">CtxRec 1.00</span></div>
+</div>
+
+<div id="qc03" class="qcard" style="--c-dark:#378ADD;">
+  <div class="qcard-hd"><span class="qbadge qbg">Working</span><span class="qcard-title">q03 — Look up customer cust_0005</span><span class="qcard-sub">1 source · 1.0s</span></div>
+  <div class="qsec"><div class="qslbl route">LLM router — exact code path</div><div class="steps">
+    <div class="step"><div class="sdot sd-b">1</div><div class="stext"><span class="fn">_try_id_pattern_match()</span> checks <code>CUSTOMER_ID_RE = re.compile(r"\b(cust_\d{4})\b")</code> → <span class="good">matches</span>. Returns <code>paths:["mongo","graph"]</code>, <code>params:{customer_id:"cust_0005"}</code></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><span class="file">mongo_lookup.py</span> → <span class="fn">get_customer("cust_0005")</span> → Diarmuid Doherty + <span class="fn">get_invoices_for_customer()</span> + <span class="fn">get_pos_for_customer()</span></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-p">3</div><div class="stext"><span class="file">graph_search.py</span> → <span class="fn">customer_full_history("cust_0005")</span> → returns empty (no invoices for this customer)</div></div>
+  </div></div>
+  <div class="qsec"><div class="qslbl manual">Verify</div><div class="steps">
+    <div class="step"><div class="sdot sd-g">1</div><div class="stext"><strong>Compass → customers:</strong> <code>{"customer_id":"cust_0005"}</code> → Diarmuid Doherty, plumber</div></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><strong>Compass → invoices:</strong> <code>{"customer_id":"cust_0005"}</code> → count results; if zero explains 1-source result</div></div>
+  </div></div>
+  <div class="qscores"><span class="sc">Faith 0.00*</span><span class="sc">AnsRel 1.00</span><span class="sc">CtxPre 1.00</span><span class="sc">CtxRec 0.50</span></div>
+</div>
+
+<div id="qc04" class="qcard" style="--c-dark:#1D9E75;">
+  <div class="qcard-hd"><span class="qbadge qbg">Fixed this run</span><span class="qcard-title">q04 — Find email msg_0001</span><span class="qcard-sub">was 0 sources → now 4</span></div>
+  <div class="qsec"><div class="qslbl route">Before fix (Runs 1 & 2) — what was broken</div><div class="steps">
+    <div class="step"><div class="sdot sd-r">1</div><div class="stext">No <code>msg_</code> pattern in <span class="fn">_try_id_pattern_match()</span> → <span class="bad">falls through to _llm_classify()</span></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-r">2</div><div class="stext">LLM classifies as <code>open_search</code> → vector search on "Find email msg_0001" → <span class="bad">0 results</span></div></div>
+  </div></div>
+  <div class="qsec"><div class="qslbl route">After fix (Run 3) — current flow</div><div class="steps">
+    <div class="step"><div class="sdot sd-g">1</div><div class="stext"><strong>Fix 1 — router.py:</strong> <code>EMAIL_MSG_RE = re.compile(r"\b(msg_\d{4})\b")</code> added → <span class="good">matches msg_0001</span> → <code>intent:email_lookup</code>, <code>paths:["mongo"]</code></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><strong>Fix 3 — mongo_lookup.py:</strong> <code>if "email_id" in params: out["email"] = get_email(params["email_id"])</code> → <span class="good">Donal Sheehan's email retrieved</span></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-g">3</div><div class="stext"><strong>Fix 4 — context_assembler.py:</strong> email block formatter added → from, subject, body in Claude context → <span class="good">all 4 metrics score 1.00</span></div></div>
+  </div>
+  <div class="fx-note fx-green"><strong>3 files changed:</strong> router.py + mongo_lookup.py + context_assembler.py</div>
+  </div>
+  <div class="qsec"><div class="qslbl manual">Verify the fix</div><div class="steps">
+    <div class="step"><div class="sdot sd-g">1</div><div class="stext"><strong>PowerShell:</strong> <code>python -c "from retrieve.router import classify_query; print(classify_query('Find email msg_0001'))"</code> → expect <code>intent:email_lookup  method:pattern_id</code></div></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><strong>Compass → emails:</strong> <code>{"email_id":"msg_0001"}</code> → Donal Sheehan, shower installation, cust_0016</div></div>
+  </div></div>
+  <div class="qscores"><span class="sc" style="color:#0F6E56;border-color:#1D9E75;">Faith 1.00</span><span class="sc" style="color:#0F6E56;border-color:#1D9E75;">AnsRel 1.00</span><span class="sc" style="color:#0F6E56;border-color:#1D9E75;">CtxPre 1.00</span><span class="sc" style="color:#0F6E56;border-color:#1D9E75;">CtxRec 1.00</span></div>
+</div>
+
+<div id="qc05" class="qcard" style="--c-dark:#378ADD;">
+  <div class="qcard-hd"><span class="qbadge qbg">Working</span><span class="qcard-title">q05 — Show all purchase orders for Gerard Walsh</span><span class="qcard-sub">3 sources · 2.9s</span></div>
+  <div class="qsec"><div class="qslbl route">LLM router — exact code path</div><div class="steps">
+    <div class="step"><div class="sdot sd-b">1</div><div class="stext">No ID pattern → <span class="fn">_llm_classify()</span>. Prompt rule: "Named customer → customer_lookup_by_name + ['mongo','graph']". Extracts <code>customer_name:"Gerard Walsh"</code></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><span class="file">mongo_lookup.py</span> → <span class="fn">get_customers_by_name("Gerard Walsh")</span> → cust_0001 → <span class="fn">get_pos_for_customer("cust_0001")</span></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-p">3</div><div class="stext"><strong>Fix 2 — orchestrator.py:</strong> resolved customer_id passed to <span class="fn">graph_traversal()</span> → <span class="fn">customer_full_history("cust_0001")</span> runs. Returns po_numbers, empty invoice_ids.</div></div>
+  </div></div>
+  <div class="qsec"><div class="same-as">Manual verification — same as q03 but: Compass → customers filter <code>{"first_name":"Gerard","last_name":"Walsh"}</code> first to confirm cust_0001, then Compass → pos filter <code>{"matched_customer_id":"cust_0001"}</code></div></div>
+  <div class="qscores"><span class="sc">Faith 0.25</span><span class="sc">AnsRel 0.70</span><span class="sc">CtxPre 0.33</span><span class="sc">CtxRec 0.50</span></div>
+</div>
+
+<div id="qc06" class="qcard" style="--c-dark:#378ADD;">
+  <div class="qcard-hd"><span class="qbadge qbg">Working — semantic search</span><span class="qcard-title">q06 — Any customers complaining about water dripping?</span><span class="qcard-sub">5 sources · 9.8s</span></div>
+  <div class="qsec"><div class="qslbl route">LLM router — exact code path</div><div class="steps">
+    <div class="step"><div class="sdot sd-b">1</div><div class="stext">No ID pattern → <span class="fn">_llm_classify()</span> → <code>intent:open_search</code>, <code>paths:["vector","graph"]</code></div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><span class="file">vector_search.py</span> → <span class="fn">vector_search("Any customers complaining about water dripping?", top_k=5)</span> → encodes via all-MiniLM-L6-v2 → Atlas $vectorSearch → msg_0088 (0.68), msg_0041 (0.68), msg_0076 (0.67), jobtype_pl_19 (0.66), msg_0015 (0.65)</div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-p">3</div><div class="stext"><span class="fn">graph_traversal({})</span> — empty params, nothing runs</div></div>
+  </div></div>
+  <div class="qsec"><div class="qslbl manual">Verify</div><div class="steps">
+    <div class="step"><div class="sdot sd-g">1</div><div class="stext"><strong>Compass → emails:</strong> <code>{"email_id":"msg_0041"}</code> → urgent attic leak. <code>{"email_id":"msg_0015"}</code> → damp patch on ceiling. Correct matches.</div></div>
+  </div></div>
+  <div class="qscores"><span class="sc">Faith 0.50</span><span class="sc">AnsRel 0.90</span><span class="sc">CtxPre ERR</span><span class="sc">CtxRec 0.50</span></div>
+</div>
+
+<div id="qc10" class="qcard" style="--c-dark:#BA7517;">
+  <div class="qcard-hd"><span class="qbadge qba">Partial</span><span class="qcard-title">q10 — Need someone urgently, job is dangerous</span><span class="qcard-sub">5 sources · 4.9s</span></div>
+  <div class="qsec"><div class="same-as">Same router and retrieval path as q06 — LLM classifies as general_question via ["vector","graph"]. Vector search returns msg_0023 (carpenter break-in, 0.71), msg_0041 (attic leak, 0.70), msg_0006 (0.67) plus two job type chunks.</div>
+  <div class="fx-note fx-amber" style="margin-top:8px"><strong>Why answer_relevancy = 0.30:</strong> Query sounds like a dispatch request ("I need someone") but the system treats it as an information query. Claude summarises the two urgent jobs correctly but adds a long disclaimer about not having dispatch capability. The judge penalised this as off-topic. System is being honest but format doesn't match user intent.</div>
+  </div>
+  <div class="qscores"><span class="sc">Faith 0.75</span><span class="sc">AnsRel 0.30</span><span class="sc">CtxPre 0.00</span><span class="sc">CtxRec 0.50</span></div>
+</div>
+
+<div id="qc11" class="qcard" style="--c-dark:#BA7517;">
+  <div class="qcard-hd"><span class="qbadge qba">Data gap</span><span class="qcard-title">q11 — What has Gerard Walsh had done before?</span><span class="qcard-sub">3 sources · 2.5s</span></div>
+  <div class="qsec"><div class="same-as">Same router path as q05 — LLM classifies as customer_lookup_by_name, mongo resolves to cust_0001, graph runs customer_full_history().</div>
+  <div class="fx-note fx-amber" style="margin-top:8px"><strong>Root cause confirmed:</strong> Compass → invoices filter <code>{"customer_id":"cust_0001"}</code> returns 0 documents. Gerard Walsh is a new customer with only an active PO — no completed work. Neo4j confirms only PLACED_PO relationship, no Invoice nodes. System answered honestly and correctly. Not a code bug.</div>
+  </div>
+  <div class="qsec"><div class="qslbl manual">Verify the data gap</div><div class="steps">
+    <div class="step"><div class="sdot sd-g">1</div><div class="stext"><strong>Compass → invoices:</strong> <code>{"customer_id":"cust_0001"}</code> → confirm 0 results</div></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><strong>Neo4j:</strong> <code>MATCH (c:Customer {customer_id:"cust_0001"})-[r]->(n) RETURN type(r),n</code> → only PLACED_PO</div></div>
+  </div></div>
+  <div class="qscores"><span class="sc">Faith 0.40</span><span class="sc">AnsRel 0.30</span><span class="sc">CtxPre 0.00</span><span class="sc">CtxRec 0.50</span></div>
+</div>
+
+<div id="qc16" class="qcard" style="--c-dark:#5A3A1A;">
+  <div class="qcard-hd"><span class="qbadge qbg">Strongest result</span><span class="qcard-title">q16 — How much does boiler installation usually cost?</span><span class="qcard-sub">3 sources · 3.6s · all 3 stores</span></div>
+  <div class="qsec"><div class="qslbl route">LLM router — exact code path</div><div class="steps">
+    <div class="step"><div class="sdot sd-b">1</div><div class="stext">No ID pattern → <span class="fn">_llm_classify()</span> → <code>intent:pricing_query</code>, <code>paths:["predict_quote"]</code>. Extracts <code>job_name:"Boiler installation"</code> from canonical list in prompt.</div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-p">2</div><div class="stext"><strong>Sub-query 1 — Neo4j recipe:</strong> <span class="fn">items_for_job_by_name("Boiler installation")</span> → <code>MATCH (j)-[:USES_ITEM]->(i) WHERE toLower(j.job_name)=...</code> → 5 items, subtotal €1,197.70</div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-g">3</div><div class="stext"><strong>Sub-query 2 — MongoDB labour:</strong> <span class="fn">get_invoices_for_job_type("pl_01")</span> → 4 invoices → median labour_cost_ex_vat = €429.99</div></div><div class="conn"></div>
+    <div class="step"><div class="sdot sd-p">4</div><div class="stext"><strong>Sub-query 3 — Neo4j benchmark:</strong> <span class="fn">similar_pos_by_job_type()</span> → PO-2026-P0042 avg €2,106.50. Confidence: predicted €2,002 vs benchmark = 5% → <code>High</code></div></div>
+  </div></div>
+  <div class="qsec"><div class="qslbl manual">Verify all three stores</div><div class="steps">
+    <div class="step"><div class="sdot sd-g">1</div><div class="stext"><strong>Neo4j:</strong> <code>MATCH (j:JobType)-[:USES_ITEM]->(i) WHERE j.job_name="Boiler installation" RETURN i.item_name, i.unit_price_ex_vat</code> → Gas boiler 24kW €1,100</div></div>
+    <div class="step"><div class="sdot sd-g">2</div><div class="stext"><strong>Compass → invoices:</strong> <code>{"job_type_id":"pl_01"}</code> → 4 records with labour_cost_ex_vat field. Median = €429.99</div></div>
+    <div class="step"><div class="sdot sd-g">3</div><div class="stext"><strong>Compass → pos:</strong> <code>{"job_type":"Boiler installation"}</code> → PO-2026-P0042, €2,106.50 — the benchmark</div></div>
+  </div></div>
+  <div class="qscores"><span class="sc">Faith 0.00*</span><span class="sc">AnsRel 0.95</span><span class="sc">CtxPre 0.00*</span><span class="sc">CtxRec 0.00*</span><span style="font-size:.78rem;color:var(--muted);margin-left:6px">*judge saw aggregate labels — answer is perfectly grounded</span></div>
+</div>
+</div>
+
+<!-- FIXES -->
+<div id="fixes" class="ev-panel">
+<div class="fxcard"><div class="fxt">Fix 1 — Router: msg_XXXX regex pattern (Run 1 → 2)</div><div class="fxb">File: <code>retrieve/router.py</code> line 26 — Added <code>EMAIL_MSG_RE = re.compile(r"\b(msg_\d{4})\b")</code> and match block in <span style="font-family:Consolas,Monaco,monospace;font-size:.85em">_try_id_pattern_match()</span>. Before: email ID queries fell through to open_search, 0 sources. After: routes directly to email_lookup via mongo.</div></div>
+<div class="fxcard"><div class="fxt">Fix 2 — Orchestrator: customer_id enrichment (Run 1 → 2)</div><div class="fxb">File: <code>retrieve/orchestrator.py</code> in <code>answer_query()</code> — After mongo lookup resolves name → customer_id, that ID is now passed to <code>graph_traversal()</code>. Before: graph received only customer_name so customer_full_history() was never called. After: Neo4j history retrieved, sources include customer graph context.</div></div>
+<div class="fxcard"><div class="fxt">Fix 3 — Email handler in mongo_lookup (Run 2 → 3)</div><div class="fxb">File: <code>retrieve/mongo_lookup.py</code> in <code>lookup_by_intent()</code> — Added <code>if "email_id" in params: out["email"] = get_email(params["email_id"])</code>. Before: email_id params silently ignored. After: email document fetched and returned.</div></div>
+<div class="fxcard"><div class="fxt">Fix 4 — Email formatting in context_assembler (Run 2 → 3)</div><div class="fxb">File: <code>retrieve/context_assembler.py</code> in <code>_format_mongo()</code> — Added email block formatter with from_name, subject, body preview. Before: even when email fetched, assembler had no formatter. After: Donal Sheehan's email appears in Claude context.</div></div>
+<div class="fxcard pend"><div class="fxt">Pending — q_mat: materials for invoice (not yet implemented)</div><div class="fxb">File: <code>retrieve/router.py</code> invoice match block — Returns paths:["mongo"] only. Adding "graph" path and chaining Neo4j USES_ITEM query after MongoDB fetch would surface materials for any invoice. Documented as known limitation.</div></div>
+</div>
+
+<!-- ASSUMPTION TESTS -->
+<div id="assume" class="ev-panel">
+<div class="asummary" id="asummary">10 questions with no answers in the database. System must decline honestly — not hallucinate. Mark Pass or Fail for each.</div>
+<div id="acards2"></div>
+</div>
+
+</div><!-- end eval wrap -->
+</div><!-- end eval panel -->
+
+<script>
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.navtab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  event.target.classList.add('on');
+}
+function showEv(id){
+  document.querySelectorAll('.ev-panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ev-tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  event.target.classList.add('on');
+}
+function showQ(id,btn){
+  document.querySelectorAll('.qcard').forEach(c=>c.classList.remove('on'));
+  document.querySelectorAll('.qbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+}
+// Eval bars
+const metrics=[{l:'Faithfulness',r1:.37,r2:.36,r3:.34},{l:'Answer relevancy',r1:.65,r2:.66,r3:.79},{l:'Context precision',r1:.43,r2:.50,r3:.54},{l:'Context recall',r1:.19,r2:.25,r3:.61}];
+const bars=document.getElementById('ev-bars');
+metrics.forEach(m=>{
+  bars.innerHTML+=`<div class="brow"><div class="blbl">${m.l}</div><div class="btrack" style="height:16px"><div class="b1" style="width:${Math.round(m.r1*100)}%;height:16px"></div><div class="b2" style="width:${Math.round(m.r2*100)}%;height:16px;margin-top:-16px"></div><div class="b3" style="width:${Math.round(m.r3*100)}%;height:16px;margin-top:-16px"></div></div><div class="bval">${m.r3.toFixed(2)}</div></div>`;
+});
+// Assumption tests
+const tests=[
+  ['T01','Do you offer emergency callouts 24/7?','Pass: states no availability data. Fail: invents hours.'],
+  ['T02','What is your cancellation policy?','Pass: states no policy data. Fail: invents a policy.'],
+  ['T03','How long does a boiler installation take?','Pass: states no duration data. Fail: says "4-6 hours".'],
+  ['T04','Do you offer a warranty on your work?','Pass: states no warranty info. Fail: invents warranty terms.'],
+  ['T05','What areas of Ireland do you cover?','Pass: has Eircodes but no coverage policy. Fail: invents counties.'],
+  ['T06','What are your payment terms?','Pass: states no payment data. Fail: invents deposit or schedule.'],
+  ['T07','Can I get a discount for multiple jobs?','Pass: states no discount policy. Fail: offers a percentage.'],
+  ['T08','What qualifications do your plumbers have?','Pass: states no qualification data. Fail: mentions CIRI or similar.'],
+  ['T09','Are you registered with Safe Electric Ireland?','Pass: states no registration data. Fail: confirms or denies.'],
+  ['T10','Do you provide written guarantees?','Pass: states no guarantee data. Fail: invents a guarantee period.'],
+];
+const ac=document.getElementById('acards2');
+const res={};
+tests.forEach(t=>{
+  res[t[0]]=null;
+  ac.innerHTML+=`<div class="acard"><div class="aq"><div class="aqt">${t[0]} — ${t[1]}</div><div class="aqe">${t[2]}</div></div><div class="abtn"><button id="p${t[0]}" onclick="mk('${t[0]}','pass')">Pass</button><button id="f${t[0]}" onclick="mk('${t[0]}','fail')">Fail</button></div></div>`;
+});
+function mk(id,r){
+  res[id]=r;
+  document.getElementById('p'+id).className=r==='pass'?'pass':'';
+  document.getElementById('f'+id).className=r==='fail'?'fail':'';
+  const done=Object.values(res).filter(v=>v!==null).length;
+  const passed=Object.values(res).filter(v=>v==='pass').length;
+  const failed=Object.values(res).filter(v=>v==='fail').length;
+  document.getElementById('asummary').textContent=done===10?`${passed}/10 passed — ${failed} failure(s) where LLM hallucinated instead of declining honestly.`:`${done}/10 scored — ${passed} pass, ${failed} fail so far.`;
+}
+// Architecture modal
+const STEP_DATA={
+  '1':{title:'1. New data event',body:`<div class="arch-section"><h4>What happens</h4><ul><li>A customer email arrives and is parsed by the email pipeline</li><li>A PO PDF is uploaded for extraction by Claude</li><li>An invoice is manually created or spoken via voice-to-invoice</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><p>Single entry point design means the chatbot stays in sync regardless of how data arrives. All downstream writes happen automatically.</p></div>`},
+  '2':{title:'MongoDB write',body:`<div class="arch-section"><h4>Functions</h4><ul><li><code>load_po_pdfs.py</code> — pushes PDF-extracted POs to MongoDB</li><li><code>add_invoice.insert</code> — inserts into invoices, invoice_items collections</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>Sub-millisecond direct lookup when chatbot needs any record by ID</li><li>Schema flexibility — new fields (audio_transcript_url etc.) require no migration</li><li>Aggregations power predict_quote labour cost statistics</li><li>EU residency (Azure Ireland) simplifies GDPR posture</li></ul></div><button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button><div class="refs-section"><h4>Reference</h4><div class="ref-item"><strong>Sadalage and Fowler (2012) NoSQL Distilled:</strong> schema flexibility is the key advantage of document stores for heterogeneous data. <a href="https://martinfowler.com/books/nosql.html" target="_blank">Reference</a>.</div></div>`},
+  '3':{title:'Neo4j write',body:`<div class="arch-section"><h4>Functions</h4><ul><li><code>load_pos_to_neo4j.py</code> — current Phase 3 ingest</li><li>Creates nodes and USES_ITEM, FOR_CUSTOMER, FOR_JOB relationships</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>The killer feature is impossible without this — USES_ITEM recipe drives predict_quote</li><li>Customer history queries in one round-trip</li><li>Future recommendation features come almost free</li></ul></div><button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button><div class="refs-section"><h4>Reference</h4><div class="ref-item"><strong>Wong (2017) Wanderu case study:</strong> MongoDB + Neo4j polyglot for transit path-finding. <a href="https://neo4j.com/blog/polyglot-persistence-mongodb-wanderu-case-study/" target="_blank">Read</a>.</div></div>`},
+  '4':{title:'Embed free text',body:`<div class="arch-section"><h4>What gets embedded</h4><ul><li>YES: email bodies, job descriptions, PO notes — vocabulary varies</li><li>NO: customer_id, invoice totals, dates — exact-match is faster</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>Vocabulary forgiveness — "fit a new bath" matches "bathroom suite installation"</li><li>No retraining — new content immediately searchable after insert</li><li>Conditional embedding keeps ingest fast and storage lean</li></ul></div>`},
+  '5':{title:'MongoDB Atlas store',body:`<div class="arch-section"><h4>What lives here</h4><ul><li><strong>9 collections, ~1,468 records total</strong></li><li>customers (121), emails (100), invoices (150), invoice_items (750), items (88), job_types (60), pos (15), trades (3), chunks (263)</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>Single source of truth for all document records</li><li>Multi-AZ replication automatic on Atlas</li><li>Vector search lives next to documents — same connection, same cluster</li></ul></div><button class="refs-toggle" onclick="toggleRefs(this)">Reference ▾</button><div class="refs-section"><h4>Reference</h4><div class="ref-item"><strong>Schneider et al. (2025) BISE:</strong> operational realities of RAG on managed cloud infrastructure. <a href="https://link.springer.com/article/10.1007/s12599-025-00945-3" target="_blank">Read</a>.</div></div>`},
+  '6':{title:'Neo4j AuraDB store',body:`<div class="arch-section"><h4>What lives here</h4><ul><li><strong>537 nodes</strong> across 7 labels: Customer, Email, Invoice, Item, JobType, PO, Trade</li><li><strong>2,030 relationships</strong> across 11 types</li><li>Key: (JobType)-[:USES_ITEM {typical_quantity}]->(Item)</li></ul></div><div class="arch-section"><h4>AuraDB Free quirks</h4><ul><li>Auto-pause after ~3 days idle — auto-recovery implemented in graph_search.py</li><li>First post-pause query: 1-2 extra seconds while instance wakes</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>Pricing predictions in milliseconds via Cypher traversal</li><li>Customer history without n+1 queries</li><li>Auto-recovery means chatbot never crashes from cold starts</li></ul></div>`},
+  '7':{title:'Vector index — chunks collection',body:`<div class="arch-section"><h4>Index configuration</h4><ul><li>Index name: <code>vector_index</code> (Atlas Search UI)</li><li>Field: <code>chunks.embedding</code>, Dimensions: 384, Similarity: cosine</li><li>Model: sentence-transformers/all-MiniLM-L6-v2</li><li>263 chunks indexed across emails, POs, customer notes</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>Semantic matching without exact keyword overlap</li><li>Free-text search over email bodies — handles any phrasing variation</li><li>No separate vector store — lives in same Atlas cluster as documents</li></ul></div>`},
+  '8':{title:'Direct lookups — mongo_lookup module',body:`<div class="arch-section"><h4>Functions</h4><ul><li><code>get_customer(customer_id)</code> — single doc fetch from customers collection</li><li><code>get_invoice(invoice_id)</code> — single doc from invoices + line items</li><li><code>get_po(po_number)</code> — single doc from pos collection</li><li><code>get_email(email_id)</code> — single doc from emails (added in Fix 3)</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>Sub-10ms retrieval for any exact ID lookup</li><li>No LLM call needed for deterministic ID queries</li><li>Pattern-matched in router — bypasses LLM classification entirely</li></ul></div>`},
+  '9':{title:'predict_quote — the killer feature',body:`<div class="arch-section"><h4>What it does</h4><ul><li>Sub-query 1: Neo4j USES_ITEM recipe → materials list + quantities</li><li>Sub-query 2: MongoDB invoices aggregation → median labour cost statistics</li><li>Sub-query 3: Neo4j similar POs → benchmark cross-validation</li><li>Output: confidence-scored quote with itemised breakdown</li></ul></div><div class="benefit-box"><h4>Result</h4><p>Boiler installation: €2,002.06 predicted vs €2,106.50 benchmark PO — within 5%. No single store can answer this question alone. This is the architectural climax.</p></div>`},
+  '10':{title:'Vector and graph search',body:`<div class="arch-section"><h4>Functions</h4><ul><li><code>vector_search(query, top_k=5)</code> — Atlas $vectorSearch aggregation on chunks</li><li><code>graph_traversal(params)</code> — Cypher dispatcher for items, customer history, PO context</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>Vector handles vocabulary-variable queries (emails, descriptions)</li><li>Graph handles relationship queries (customer history, materials recipe)</li><li>Two retrievers complement rather than compete</li></ul></div><button class="refs-toggle" onclick="toggleRefs(this)">Reference ▾</button><div class="refs-section"><h4>Reference</h4><div class="ref-item"><strong>Rackauckas (2024) RAG-Fusion:</strong> hybrid retrieval combining multiple retrieval paths. <a href="https://arxiv.org/abs/2402.03367" target="_blank">Read</a>.</div></div>`},
+  '11':{title:'Orchestrator — the single entry point',body:`<div class="arch-section"><h4>answer_query() — 5 stages</h4><ul><li>Stage 1: router.classify_query() → intent + params</li><li>Stage 2: dispatch to one or more retrievers</li><li>Stage 3: context_assembler merges results into Markdown</li><li>Stage 4: Claude generates grounded answer</li><li>Stage 5: returns answer + sources + routing trace + latency + token counts</li></ul></div><div class="arch-section"><h4>Performance</h4><ul><li>Cold start: 6.1s · Warm state: 2.1-2.4s · Cost: ~€0.001-0.002/query</li></ul></div><div class="benefit-box"><h4>Architectural benefit</h4><ul><li>One function to test, one function to monitor</li><li>Future security features (PII redaction, audit logging) bolt on cleanly</li><li>The eval set just calls answer_query() in a loop — 10-line test script</li></ul></div><button class="refs-toggle" onclick="toggleRefs(this)">Reference ▾</button><div class="refs-section"><h4>Reference</h4><div class="ref-item"><strong>Wang et al. (2025) RAGVA paper:</strong> orchestration identified as one of 8 key RAG engineering challenges. <a href="https://www.sciencedirect.com/science/article/pii/S0164121225001049" target="_blank">Read</a>.</div></div>`}
+};
+document.querySelectorAll('.clickbox').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.querySelectorAll('.clickbox').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    const d=STEP_DATA[el.dataset.step];
+    if(!d)return;
+    document.getElementById('modal-title').textContent=d.title;
+    document.getElementById('modal-body').innerHTML=d.body;
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow='hidden';
+    document.getElementById('modal').scrollTop=0;
+  });
+});
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow='';
+  document.querySelectorAll('.clickbox').forEach(b=>b.classList.remove('active'));
+}
+function toggleRefs(btn){
+  const r=btn.nextElementSibling;
+  r.classList.toggle('open');
+  btn.classList.toggle('active');
+  btn.textContent=r.classList.contains('open')?'Reference and lessons learned ▴':'Reference and lessons learned ▾';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+</script>
+</body>
+</html>

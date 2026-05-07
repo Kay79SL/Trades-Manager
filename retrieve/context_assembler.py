@@ -3,19 +3,7 @@ context_assembler.py
 =====================
 Module 5 of Phase 5 retrieval orchestration.
 
-Takes raw results from one or more retrievers (vector_search, mongo_lookup,
-graph_search, predict_quote) and produces a single clean text block to
-inject into Claude's prompt. Also tracks source provenance so the final
-chatbot response can cite where information came from.
-
-Design goals:
-  - Compact: every irrelevant byte costs Claude tokens
-  - Structured: clear section headers so Claude can find what it needs
-  - Cited: every fact is tagged with its source for transparency
-  - Deduped: same chunk appearing in multiple retrievers shows once
-
-Used by:
-  - orchestrator.py (final step before Claude API call)
+Updated to support list/browse query results.
 """
 
 from __future__ import annotations
@@ -23,7 +11,6 @@ from __future__ import annotations
 from typing import Any
 
 
-# Maximum characters of context to keep things tight (~5000 tokens of context)
 MAX_CONTEXT_CHARS = 12_000
 
 
@@ -31,50 +18,45 @@ def assemble_context(
     results: dict[str, Any],
     user_query: str,
 ) -> dict[str, Any]:
-    """
-    Take a dict of retrieval results from multiple modules and produce:
-      - context_text: a Markdown-formatted string for Claude's prompt
-      - sources: a list of source identifiers for citation in the UI
-
-    `results` shape (any keys can be missing — assemble what's there):
-      {
-        "vector":  [list of chunk dicts from vector_search],
-        "mongo":   {dict of mongo_lookup output},
-        "graph":   {dict of graph_search output},
-        "predict": {dict of predict_quote output},
-      }
-    """
+    """Take retrieval results and produce context_text + sources."""
     sections: list[str] = []
     sources: list[str] = []
 
-    # 1. Pricing prediction (highest priority - put first if present)
+    # Pricing prediction (highest priority)
     if "predict" in results and results["predict"]:
-        predict_section, predict_sources = _format_predict(results["predict"])
-        if predict_section:
-            sections.append(predict_section)
-            sources.extend(predict_sources)
+        s, src = _format_predict(results["predict"])
+        if s:
+            sections.append(s)
+            sources.extend(src)
 
-    # 2. Customer / invoice / PO direct lookups
+    # NEW: List/browse data
+    if "list" in results and results["list"]:
+        s, src = _format_list(results["list"])
+        if s:
+            sections.append(s)
+            sources.extend(src)
+
+    # Direct lookups
     if "mongo" in results and results["mongo"]:
-        mongo_section, mongo_sources = _format_mongo(results["mongo"])
-        if mongo_section:
-            sections.append(mongo_section)
-            sources.extend(mongo_sources)
+        s, src = _format_mongo(results["mongo"])
+        if s:
+            sections.append(s)
+            sources.extend(src)
 
-    # 3. Graph relationships
+    # Graph relationships
     if "graph" in results and results["graph"]:
-        graph_section, graph_sources = _format_graph(results["graph"])
-        if graph_section:
-            sections.append(graph_section)
-            sources.extend(graph_sources)
+        s, src = _format_graph(results["graph"])
+        if s:
+            sections.append(s)
+            sources.extend(src)
 
-    # 4. Vector search hits — collected last as broad context
+    # Vector search
     if "vector" in results and results["vector"]:
-        seen = set(sources)  # dedupe against earlier sources
-        vector_section, vector_sources = _format_vector(results["vector"], seen)
-        if vector_section:
-            sections.append(vector_section)
-            sources.extend(vector_sources)
+        seen = set(sources)
+        s, src = _format_vector(results["vector"], seen)
+        if s:
+            sections.append(s)
+            sources.extend(src)
 
     if not sections:
         return {
@@ -83,8 +65,6 @@ def assemble_context(
         }
 
     context_text = "\n\n".join(sections)
-
-    # Hard cap to protect against runaway context
     if len(context_text) > MAX_CONTEXT_CHARS:
         context_text = context_text[:MAX_CONTEXT_CHARS] + "\n\n[... truncated ...]"
 
@@ -94,12 +74,7 @@ def assemble_context(
     }
 
 
-# ---------------------------------------------------------------------------
-# Per-source formatters
-# ---------------------------------------------------------------------------
-
 def _format_predict(predict: dict) -> tuple[str, list[str]]:
-    """Format a predict_quote result as a Markdown block."""
     if not predict.get("job_type"):
         return "", []
 
@@ -109,11 +84,10 @@ def _format_predict(predict: dict) -> tuple[str, list[str]]:
     lines.append(f"**Confidence:** {predict.get('confidence', 'unknown')}")
     lines.append("")
 
-    # Materials section
     mat = predict.get("materials", {})
     if mat.get("items"):
         lines.append(f"**Materials estimate:** €{mat.get('subtotal', 0):.2f} ex VAT")
-        for item in mat["items"][:8]:  # Cap at 8 items for compactness
+        for item in mat["items"][:8]:
             lines.append(
                 f"  - {item['item_name']:30}  "
                 f"qty {item['quantity']} × €{item['unit_price']:.2f} = €{item['line_total']:.2f}"
@@ -122,7 +96,6 @@ def _format_predict(predict: dict) -> tuple[str, list[str]]:
             lines.append(f"  - ...and {len(mat['items']) - 8} more items")
         sources.append(f"Neo4j USES_ITEM recipe ({mat['n_recipe_items']} items)")
 
-    # Labour section
     lab = predict.get("labour", {})
     if lab.get("n_invoices", 0) > 0:
         lines.append("")
@@ -133,13 +106,11 @@ def _format_predict(predict: dict) -> tuple[str, list[str]]:
         )
         sources.append(f"MongoDB invoices ({lab['n_invoices']} records)")
 
-    # Totals
     totals = predict.get("totals", {})
     lines.append("")
     lines.append(f"**Total estimate:** €{totals.get('total_inc_vat', 0):.2f} inc VAT "
                  f"(subtotal €{totals.get('subtotal_ex_vat', 0):.2f} + VAT €{totals.get('vat_23pct', 0):.2f})")
 
-    # Benchmark
     bench = predict.get("benchmark", {})
     if bench.get("n_pos", 0) > 0:
         lines.append("")
@@ -153,8 +124,83 @@ def _format_predict(predict: dict) -> tuple[str, list[str]]:
     return "\n".join(lines), sources
 
 
+def _format_list(list_data: dict) -> tuple[str, list[str]]:
+    """Format a list/summary result as Markdown."""
+    if not list_data or not list_data.get("items"):
+        return "", []
+
+    sources = []
+    list_type = list_data.get("type", "")
+    items = list_data.get("items", [])
+    title = list_data.get("title", "Records")
+
+    lines = [f"## {title}"]
+
+    if list_type == "pos":
+        lines.append(f"Found {len(items)} purchase order(s):\n")
+        for po in items:
+            lines.append(
+                f"- **{po.get('po_number')}**: {po.get('cust_name', '?')} "
+                f"({po.get('matched_customer_id', '?')}), "
+                f"{po.get('job_type', '?')} — "
+                f"€{po.get('total_inc_vat', 0):.2f} — "
+                f"{po.get('po_status', '?')}"
+            )
+            sources.append(f"PO {po.get('po_number')}")
+
+    elif list_type == "customers":
+        lines.append(f"Customers (showing {len(items)}):\n")
+        for c in items:
+            lines.append(
+                f"- **{c.get('customer_id')}**: {c.get('first_name')} {c.get('last_name')} "
+                f"<{c.get('email')}> — {c.get('preferred_trade', '?')}"
+            )
+        sources.append(f"MongoDB customers ({len(items)} records)")
+
+    elif list_type == "jobs":
+        by_trade = {}
+        for j in items:
+            trade = j.get("trade", "other")
+            by_trade.setdefault(trade, []).append(j)
+        lines.append(f"Available job types ({len(items)} total):\n")
+        for trade in sorted(by_trade.keys()):
+            lines.append(f"\n**{trade.title()}** ({len(by_trade[trade])} jobs):")
+            for j in by_trade[trade]:
+                lines.append(f"  - {j.get('job_name')} ({j.get('job_type_id')})")
+        sources.append("MongoDB job_types")
+
+    elif list_type == "invoices":
+        lines.append(f"Recent invoices ({len(items)}):\n")
+        for inv in items:
+            lines.append(
+                f"- **{inv.get('invoice_id')}** ({inv.get('invoice_date', '?')}): "
+                f"customer {inv.get('customer_id')}, "
+                f"job {inv.get('job_type_id', '?')}, "
+                f"€{inv.get('total_inc_vat', 0):.2f}"
+            )
+        sources.append(f"MongoDB invoices ({len(items)} records)")
+
+    elif list_type == "emails":
+        lines.append(f"Recent emails ({len(items)}):\n")
+        for e in items:
+            extracted = e.get("extracted") or {}
+            lines.append(
+                f"- **{e.get('email_id')}** from {e.get('from_email', '?')}: "
+                f"{e.get('subject', '?')} "
+                f"[{extracted.get('trade_needed', '?')}, {extracted.get('urgency', '?')}]"
+            )
+        sources.append(f"MongoDB emails ({len(items)} records)")
+
+    elif list_type == "summary":
+        lines.append("Database statistics:\n")
+        for collection, count in items.items():
+            lines.append(f"- **{collection}**: {count:,} records")
+        sources.append("MongoDB collection counts")
+
+    return "\n".join(lines), sources
+
+
 def _format_mongo(mongo: dict) -> tuple[str, list[str]]:
-    """Format mongo_lookup output as Markdown."""
     sources = []
     lines = ["## DIRECT LOOKUPS"]
     has_content = False
@@ -213,12 +259,21 @@ def _format_mongo(mongo: dict) -> tuple[str, list[str]]:
         lines.append(f"  - Total: €{inv.get('total_inc_vat', 0):.2f} inc VAT")
         sources.append(f"Invoice {inv.get('invoice_id')}")
         has_content = True
+        
+    if "email" in mongo and mongo["email"]:
+        e = mongo["email"]
+        lines.append(f"**Email {e.get('email_id')}:**")
+        lines.append(f"  - From: {e.get('from_name')} <{e.get('from_email')}>")
+        lines.append(f"  - Subject: {e.get('subject')}")
+        lines.append(f"  - Sent: {e.get('sent_at')}")
+        lines.append(f"  - Body: {e.get('body', '')[:500]}")
+        sources.append(f"Email {e.get('email_id')}")
+        has_content = True
 
     return ("\n".join(lines), sources) if has_content else ("", [])
 
 
 def _format_graph(graph: dict) -> tuple[str, list[str]]:
-    """Format graph_search output as Markdown."""
     sources = []
     lines = ["## GRAPH RELATIONSHIPS"]
     has_content = False
@@ -277,17 +332,16 @@ def _format_graph(graph: dict) -> tuple[str, list[str]]:
 
 
 def _format_vector(vector: list[dict], seen_sources: set) -> tuple[str, list[str]]:
-    """Format vector_search results as Markdown — dedupe against earlier sources."""
     if not vector:
         return "", []
 
     sources = []
     lines = ["## SEMANTICALLY SIMILAR CONTENT"]
 
-    for r in vector[:6]:  # Cap at top 6 for compactness
+    for r in vector[:6]:
         chunk_id = r.get("chunk_id", "?")
         score = r.get("score", 0)
-        text = (r.get("text", "") or "")[:200]  # Truncate long chunks
+        text = (r.get("text", "") or "")[:200]
         source_coll = r.get("source_collection", "?")
 
         source_label = f"{chunk_id} ({source_coll}, similarity {score:.2f})"
@@ -299,31 +353,3 @@ def _format_vector(vector: list[dict], seen_sources: set) -> tuple[str, list[str
         sources.append(source_label)
 
     return ("\n".join(lines), sources) if len(lines) > 1 else ("", [])
-
-
-# ---------------------------------------------------------------------------
-# CLI for quick testing
-# ---------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    # Mock-up to verify the formatter works in isolation
-    fake_results = {
-        "predict": {
-            "job_type": "Boiler installation",
-            "confidence": "high",
-            "materials": {
-                "items": [
-                    {"item_name": "Gas boiler 24kW", "quantity": 1, "unit_price": 1100.0, "line_total": 1100.0},
-                    {"item_name": "Boiler flue kit", "quantity": 1, "unit_price": 85.0, "line_total": 85.0},
-                ],
-                "subtotal": 1185.0,
-                "n_recipe_items": 2,
-            },
-            "labour": {"median_eur": 450.0, "min_eur": 380.0, "max_eur": 520.0, "n_invoices": 12},
-            "totals": {"subtotal_ex_vat": 1635.0, "vat_23pct": 376.05, "total_inc_vat": 2011.05},
-            "benchmark": {"n_pos": 3, "avg_total": 2050.0, "po_numbers": ["PO-2026-P0042", "PO-2026-P0058", "PO-2026-P0063"]},
-        },
-    }
-    out = assemble_context(fake_results, "How much for boiler installation?")
-    print(out["context_text"])
-    print("\n\nSOURCES:", out["sources"])

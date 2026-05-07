@@ -3,23 +3,14 @@ router.py
 ==========
 Module 6 of Phase 5 retrieval orchestration.
 
-Classifies the user's query into an intent and decides which retrieval
-path(s) to invoke. Uses a hybrid strategy:
-  1. Pattern matching for high-confidence cases (PO ids, invoice ids,
-     "how much" pricing patterns, etc.)
-  2. LLM fallback for ambiguous cases (sends a small classification
-     prompt to Claude Haiku — cheap and accurate)
+LLM-FIRST ROUTER — uses Claude Haiku for almost all classification.
 
-Output is a dict the orchestrator uses to dispatch retrievers:
-  {
-    "paths":     ["mongo", "graph", "vector", "predict_quote"],
-    "params":    {parameters extracted from the query},
-    "intent":    "pricing_query" | "customer_lookup" | "po_lookup" | "open_question",
-    "method":    "pattern" | "llm",
-  }
+Only structured ID patterns (PO/INV/cust_/email) bypass the LLM because
+they're deterministic and unambiguous. Everything else is classified by
+the LLM, which handles natural language variations gracefully.
 
-Used by:
-  - orchestrator.py (the very first call in the answer flow)
+Trade-off accepted: ~1-2 sec extra latency per query, ~€0.001 per query
+in exchange for zero keyword maintenance and natural language understanding.
 """
 
 from __future__ import annotations
@@ -43,46 +34,26 @@ def _get_client():
 
 
 # ---------------------------------------------------------------------------
-# Pattern matchers — high-confidence cases handled without LLM
+# Cheap deterministic patterns (only kept because they're unambiguous)
 # ---------------------------------------------------------------------------
 
 PO_ID_RE = re.compile(r"\b(PO-\d{4}-[A-Z]\d{4})\b", re.IGNORECASE)
 INVOICE_ID_RE = re.compile(r"\b(INV-\d{4}-\d{4})\b", re.IGNORECASE)
+EMAIL_MSG_RE = re.compile(r"\b(msg_\d{4})\b", re.IGNORECASE)
 CUSTOMER_ID_RE = re.compile(r"\b(cust_\d{4})\b", re.IGNORECASE)
 EMAIL_RE = re.compile(r"\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b")
 
-# Pricing intent triggers
-PRICING_TRIGGERS = re.compile(
-    r"\b(how much|cost|price|quote|estimate|charge for|going rate|typical)\b",
-    re.IGNORECASE,
-)
 
-# Job type keywords (basic dictionary — could be expanded from MongoDB)
-JOB_KEYWORDS = {
-    "boiler installation":       "Boiler installation",
-    "boiler service":            "Boiler service",
-    "radiator replacement":      "Radiator replacement",
-    "bathroom installation":     "Bathroom suite installation",
-    "kitchen installation":      "Kitchen installation",
-    "floor sanding":             "Floor sanding",
-    "wooden floor laying":       "Wooden floor laying",
-    "rewiring":                  "Full house rewire",
-    "light fitting":             "Light fitting installation",
-    "extra socket":              "Extra socket installation",
-}
-
-
-def _try_pattern_match(query: str) -> dict | None:
-    """Returns a routing decision if a high-confidence pattern matches, else None."""
+def _try_id_pattern_match(query: str) -> dict | None:
+    """Match deterministic ID patterns — fast and zero false positives."""
     q = query.strip()
 
-    # Direct ID lookups
     if m := PO_ID_RE.search(q):
         return {
             "paths":  ["mongo", "graph"],
             "params": {"po_number": m.group(1).upper()},
             "intent": "po_lookup",
-            "method": "pattern",
+            "method": "pattern_id",
         }
 
     if m := INVOICE_ID_RE.search(q):
@@ -90,7 +61,7 @@ def _try_pattern_match(query: str) -> dict | None:
             "paths":  ["mongo"],
             "params": {"invoice_id": m.group(1).upper()},
             "intent": "invoice_lookup",
-            "method": "pattern",
+            "method": "pattern_id",
         }
 
     if m := CUSTOMER_ID_RE.search(q):
@@ -98,7 +69,14 @@ def _try_pattern_match(query: str) -> dict | None:
             "paths":  ["mongo", "graph"],
             "params": {"customer_id": m.group(1).lower()},
             "intent": "customer_lookup",
-            "method": "pattern",
+            "method": "pattern_id",
+        }
+    if m := EMAIL_MSG_RE.search(q):
+        return {
+            "paths":  ["mongo"],
+            "params": {"email_id": m.group(1).lower()},
+            "intent": "email_lookup",
+            "method": "pattern_id",
         }
 
     if m := EMAIL_RE.search(q):
@@ -106,72 +84,125 @@ def _try_pattern_match(query: str) -> dict | None:
             "paths":  ["mongo"],
             "params": {"customer_email": m.group(1).lower()},
             "intent": "customer_lookup",
-            "method": "pattern",
+            "method": "pattern_id",
         }
-
-    # Pricing intent + recognised job type → predict_quote
-    if PRICING_TRIGGERS.search(q):
-        for keyword, job_name in JOB_KEYWORDS.items():
-            if keyword in q.lower():
-                return {
-                    "paths":  ["predict_quote"],
-                    "params": {"job_name": job_name},
-                    "intent": "pricing_query",
-                    "method": "pattern",
-                }
 
     return None
 
 
 # ---------------------------------------------------------------------------
-# LLM-based classification fallback
+# LLM classification — handles everything else
 # ---------------------------------------------------------------------------
 
 LLM_CLASSIFIER_SYSTEM = """You classify user queries about an Irish trades business
-chatbot. Return ONLY a single valid JSON object — no preamble, no markdown.
+chatbot (plumbing, carpentry, electrical). The chatbot has access to:
+- A MongoDB database of customers, invoices, POs, items, job types, emails
+- A Neo4j graph of relationships between them
+- A vector search over text content
+- A pricing predictor that uses all three for job estimates
 
-The JSON must have these fields:
+Return ONLY a single valid JSON object. No preamble, no markdown fences.
+
+Available paths (pick 1-3):
+- "vector"        : Atlas Vector Search for fuzzy/semantic content search
+- "mongo"         : Direct MongoDB lookups by ID, name, email
+- "graph"         : Neo4j relationship queries (customer history, etc.)
+- "predict_quote" : Pricing prediction for a specific job type
+- "list"          : Browse-style queries that list many records
+
+Available intents:
+- "pricing_query"           : User asks how much something costs
+- "customer_lookup_by_name" : User asks about a specific named customer
+- "po_lookup"               : User asks about a specific PO
+- "invoice_lookup"          : User asks about a specific invoice
+- "list_pos"                : "show me all POs", "list purchase orders"
+- "list_customers"          : "show me all customers"
+- "list_jobs"               : "what jobs are there"
+- "list_invoices"           : "show me recent invoices"
+- "list_emails"             : "recent emails"
+- "list_summary"            : "give me an overview"
+- "general_question"        : Open-ended question requiring search
+- "open_search"             : Free-form information retrieval
+
+Required JSON shape:
 {
-  "intent":    "pricing_query" | "customer_lookup" | "po_lookup" |
-               "invoice_lookup" | "general_question" | "open_search",
-  "paths":     a list including any of: "vector", "mongo", "graph", "predict_quote",
-  "params":    a dict with extracted entities (job_name, customer_name, etc.)
+  "intent":  "<one of the intents above>",
+  "paths":   ["<path>", ...],
+  "params":  {
+    "job_name":      "<canonical job name if pricing query>",
+    "customer_name": "<full name if customer lookup>",
+    "list_target":   "<pos|customers|jobs|invoices|emails|summary if list>"
+  }
 }
 
 Rules:
-- Pricing questions about a specific job → "predict_quote" path
-- Questions about a specific customer → "mongo" + "graph"
-- Questions about relationships ("who/which customers") → "graph"
-- General "find" or "search" questions → "vector" + optionally "graph"
-- If unsure or open-ended → ["vector", "graph"] for broad recall
+- Pricing questions ("how much", "cost", "price", "quote", "estimate") → "pricing_query" + ["predict_quote"]
+  - Extract the job_name. Use the EXACT canonical phrase from these known job types:
+    Plumbing: "Boiler installation", "Boiler service", "Annual boiler service",
+              "Bathroom suite installation", "Radiator replacement",
+              "Underfloor heating installation", "Outside tap installation",
+              "Tap replacement", "Toilet installation", "Shower installation",
+              "Hot water cylinder replacement", "Mains stop valve replacement",
+              "Leak repair", "Drain unblocking", "Pipe insulation", "Power flush"
+    Electrical: "Full house rewire", "Light fitting installation", "Extra socket installation",
+                "EV charger installation", "Smoke alarm installation", "CCTV installation",
+                "Cooker wiring", "Electric shower fit", "Consumer unit upgrade",
+                "Doorbell installation", "Fan installation", "Garden lighting",
+                "Immersion timer fit", "Outdoor socket fit", "Emergency lighting"
+    Carpentry: "Floor sanding", "Wooden floor laying", "Kitchen installation",
+               "Fitted wardrobe building", "Stairs balustrade replacement",
+               "Attic flooring", "Architrave fitting", "Door hanging", "Decking",
+               "Skirting fitting", "Shelving installation", "Custom shelving"
+  - If user phrasing doesn't match exactly, pick the CLOSEST canonical name
+  - "electric shower installation" → "Electric shower fit"
+  - "EV charging point" → "EV charger installation"
+
+- Questions about specific named customer ("Gerard Walsh", "Niamh Byrne") → 
+  "customer_lookup_by_name" + ["mongo", "graph"], extract customer_name
+
+- "show/list me all X" or "give me an overview" → "list_<X>" + ["list"]
+
+- Questions about emails, "find emails about", "recent enquiries" → ["vector"] + maybe ["mongo"]
+
+- Free-form questions you can't classify → "open_search" + ["vector", "graph"]
 """
 
 
 def _llm_classify(query: str) -> dict:
-    """Use Claude Haiku to classify ambiguous queries."""
+    """Use Claude Haiku to classify the query. Returns routing dict."""
     client = _get_client()
     response = client.messages.create(
         model=ROUTER_MODEL,
-        max_tokens=300,
+        max_tokens=400,
         system=LLM_CLASSIFIER_SYSTEM,
         messages=[{"role": "user", "content": f"Classify this query: {query}"}],
     )
     text = response.content[0].text.strip()
-    # Strip markdown fences if present
+
+    # Strip markdown fences if Claude added them despite instructions
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\n?|\n?```$", "", text).strip()
 
     try:
         result = json.loads(text)
-    except json.JSONDecodeError:
-        # Fallback: broad search
-        result = {
+        # Sanity check — must have intent and paths
+        if not result.get("intent") or not result.get("paths"):
+            raise ValueError("Missing required fields")
+        # Default empty params if missing
+        if "params" not in result:
+            result["params"] = {}
+        # Strip any null params
+        result["params"] = {k: v for k, v in result["params"].items() if v}
+        result["method"] = "llm"
+        return result
+    except (json.JSONDecodeError, ValueError):
+        # Last-resort fallback
+        return {
             "intent": "open_search",
             "paths":  ["vector", "graph"],
             "params": {},
+            "method": "llm_fallback",
         }
-    result["method"] = "llm"
-    return result
 
 
 # ---------------------------------------------------------------------------
@@ -180,8 +211,13 @@ def _llm_classify(query: str) -> dict:
 
 def classify_query(query: str) -> dict:
     """
-    Decide which retrieval paths to invoke for this query.
-    Tries pattern matching first (fast, free), falls back to LLM (cheap, flexible).
+    Classify a user query.
+
+    Strategy:
+      1. Try ID patterns (PO/INV/cust_/email) — instant if matched
+      2. Otherwise, ask the LLM to classify
+
+    Returns dict: {paths, params, intent, method}
     """
     if not query or not query.strip():
         return {
@@ -191,10 +227,12 @@ def classify_query(query: str) -> dict:
             "method": "skip",
         }
 
-    pattern_result = _try_pattern_match(query)
-    if pattern_result:
-        return pattern_result
+    # Step 1 — fast ID patterns
+    id_match = _try_id_pattern_match(query)
+    if id_match:
+        return id_match
 
+    # Step 2 — LLM classification for everything else
     return _llm_classify(query)
 
 
@@ -206,12 +244,17 @@ if __name__ == "__main__":
     import sys
     test_queries = sys.argv[1:] if len(sys.argv) > 1 else [
         "Show me PO-2026-P0042",
-        "What's Gerard Walsh's history?",
+        "find gerard walsh info",
+        "What's Gerard Walsh's phone number?",
         "How much for a boiler installation?",
-        "My lights keep flickering",
-        "Find emails about wooden floors",
-        "Has cust_0001 had work done before?",
-        "Tell me about gerardwalsh@icloud.com",
+        "give me price for electric shower installation",
+        "cost of EV charging point",
+        "rate for cooker wiring please",
+        "show me all POs",
+        "list all customers",
+        "what jobs are there?",
+        "give me an overview",
+        "find emails about leaks",
     ]
     for q in test_queries:
         print(f"\nQuery: {q}")

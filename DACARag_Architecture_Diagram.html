@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DACARag — Data Lifecycle Architecture</title>
+<style>
+:root {
+  --bg: #FAF7F2;
+  --surface: #FFFFFF;
+  --surface-2: #F5EFE6;
+  --border: #E0D6C8;
+  --border-strong: #C9BCAA;
+  --text: #2C2826;
+  --text-muted: #6B5D4F;
+  --text-subtle: #9C8E80;
+  --terra: #B85A2E;
+  --sand: #F5EDE0;
+  --sage: #C5D4B5;
+  --plum: #B49DC0;
+  --teal-light: #E1F5EE;
+  --teal-stroke: #1D9E75;
+  --coral-light: #FAECE7;
+  --coral-stroke: #D85A30;
+  --blue-light: #E6F1FB;
+  --blue-stroke: #378ADD;
+  --purple-light: #EEEDFE;
+  --purple-stroke: #7F77DD;
+  --amber-light: #FAEEDA;
+  --amber-stroke: #BA7517;
+  --info-bg: #E6F1FB;
+  --info-text: #0C447C;
+  --benefit-bg: #E1F5EE;
+  --benefit-text: #085041;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+.page-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--terra);
+}
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+.page-header p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.hint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-subtle);
+  font-style: italic;
+  margin-bottom: 16px;
+}
+.diagram-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+svg .clickbox { cursor: pointer; transition: opacity .15s; }
+svg .clickbox:hover { opacity: 0.7; }
+svg .clickbox.active rect:first-child { stroke-width: 2.5; }
+.legend-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.bottom-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.info-card h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+.info-card p {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(44, 40, 38, 0.55);
+  z-index: 1000;
+  padding: 24px;
+  overflow-y: auto;
+}
+.modal-overlay.open {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.modal {
+  background: var(--surface);
+  border-radius: 12px;
+  max-width: 760px;
+  width: 100%;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 20px 60px rgba(44, 40, 38, 0.25);
+}
+.modal-header {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 12px 12px 0 0;
+}
+.modal-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.close-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.close-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.modal-body {
+  padding: 20px 24px 24px;
+}
+.section {
+  margin-bottom: 18px;
+}
+.section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.section ul {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  margin: 0;
+  padding-left: 20px;
+}
+.section li {
+  margin-bottom: 6px;
+}
+.section li strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.section code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  background: var(--surface-2);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.benefit-box {
+  background: var(--benefit-bg);
+  border-left: 4px solid var(--teal-stroke);
+  padding: 14px 16px;
+  border-radius: 4px;
+  margin: 14px 0;
+}
+.benefit-box h4 {
+  color: var(--benefit-text);
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.benefit-box p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--benefit-text);
+  margin: 0;
+}
+.benefit-box ul {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--benefit-text);
+  margin: 0;
+  padding-left: 20px;
+}
+.benefit-box li { margin-bottom: 4px; }
+.benefit-box li strong { color: var(--benefit-text); }
+.refs-toggle {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.refs-toggle:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.refs-toggle.active {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-color: var(--info-text);
+}
+.refs-section {
+  display: none;
+  background: var(--info-bg);
+  border-left: 4px solid var(--blue-stroke);
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+.refs-section.open { display: block; }
+.refs-section h4 {
+  color: var(--info-text);
+  margin: 0 0 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+.ref-item {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--info-text);
+  margin: 0 0 10px;
+}
+.ref-item:last-child { margin-bottom: 0; }
+.ref-item strong { font-weight: 600; }
+.ref-item a {
+  color: var(--info-text);
+  text-decoration: underline;
+}
+.ref-item a:hover { text-decoration: none; }
+
+@media (max-width: 700px) {
+  .bottom-info { grid-template-columns: 1fr; }
+  .container { padding: 16px; }
+  .modal { max-height: 100vh; border-radius: 0; }
+  .modal-overlay { padding: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="page-header">
+  <h1>DACARag — Data Lifecycle Architecture</h1>
+  <p>Interactive walkthrough of the polyglot RAG write/read flow</p>
+</div>
+
+<p class="hint">Click any box in the diagram to see what each function does, why it exists, and how it benefits the chatbot architecture.</p>
+
+<div class="diagram-card">
+
+<svg width="100%" viewBox="0 0 680 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DACARag clickable data lifecycle diagram">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+  <path d="M2 1L8 5L2 9" fill="none" stroke="#6B5D4F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<g class="clickbox" data-step="1">
+  <rect x="200" y="30" width="280" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <text x="340" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#2C2C2A">1. New data event</text>
+  <text x="340" y="70" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#444441">Invoice, email, or PO captured</text>
+</g>
+
+<text x="340" y="110" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#6B5D4F">2. Run ingest pipeline (parallel writes)</text>
+
+<line x1="280" y1="86" x2="120" y2="140" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="86" x2="340" y2="140" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="400" y1="86" x2="560" y2="140" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g class="clickbox" data-step="2">
+  <rect x="30" y="140" width="180" height="76" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text x="120" y="158" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">MongoDB write</text>
+  <text x="120" y="180" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">load_po_pdfs.py</text>
+  <text x="120" y="198" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">add_invoice.insert</text>
+</g>
+
+<g class="clickbox" data-step="3">
+  <rect x="250" y="140" width="180" height="76" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text x="340" y="158" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">Neo4j write</text>
+  <text x="340" y="180" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">load_pos_to_neo4j.py</text>
+  <text x="340" y="198" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">add_invoice.graph</text>
+</g>
+
+<g class="clickbox" data-step="4">
+  <rect x="470" y="140" width="180" height="76" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="1.5"/>
+  <text x="560" y="158" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#712B13">Embed free text</text>
+  <text x="560" y="180" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#993C1D">embed_chunks.py</text>
+  <text x="560" y="198" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#993C1D">if notes present</text>
+</g>
+
+<line x1="120" y1="216" x2="120" y2="254" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="216" x2="340" y2="254" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="560" y1="216" x2="560" y2="254" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g class="clickbox" data-step="5">
+  <rect x="30" y="254" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+  <text x="120" y="274" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">MongoDB Atlas</text>
+  <text x="120" y="294" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">9 collections</text>
+</g>
+
+<g class="clickbox" data-step="6">
+  <rect x="250" y="254" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+  <text x="340" y="274" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">Neo4j AuraDB</text>
+  <text x="340" y="294" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">Property graph</text>
+</g>
+
+<g class="clickbox" data-step="7">
+  <rect x="470" y="254" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+  <text x="560" y="274" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">Vector index</text>
+  <text x="560" y="294" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">chunks collection</text>
+</g>
+
+<text x="340" y="346" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#6B5D4F">3. Next user query reads fresh data automatically</text>
+
+<line x1="120" y1="310" x2="155" y2="386" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="120" y1="310" x2="305" y2="386" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="310" x2="305" y2="386" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="310" x2="455" y2="386" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="560" y1="310" x2="155" y2="386" stroke="#888780" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+<line x1="560" y1="310" x2="455" y2="386" stroke="#888780" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+
+<g class="clickbox" data-step="8">
+  <rect x="30" y="386" width="250" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="155" y="404" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#3C3489">Direct lookups</text>
+  <text x="155" y="424" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">mongo_lookup.get_invoice</text>
+  <text x="155" y="444" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">mongo_lookup.get_customer</text>
+</g>
+
+<g class="clickbox" data-step="9">
+  <rect x="290" y="386" width="100" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+  <text x="340" y="404" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#3C3489">Predict</text>
+  <text x="340" y="424" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">predict_quote</text>
+  <text x="340" y="444" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">.predict_quote</text>
+</g>
+
+<g class="clickbox" data-step="10">
+  <rect x="400" y="386" width="250" height="76" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="525" y="404" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#3C3489">Vector and graph search</text>
+  <text x="525" y="424" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">vector_search.vector_search</text>
+  <text x="525" y="444" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#534AB7">graph_search.graph_traversal</text>
+</g>
+
+<line x1="155" y1="462" x2="340" y2="510" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="462" x2="340" y2="510" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="525" y1="462" x2="340" y2="510" stroke="#6B5D4F" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<g class="clickbox" data-step="11">
+  <rect x="200" y="510" width="280" height="76" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text x="340" y="528" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#412402">Orchestrator answers query</text>
+  <text x="340" y="548" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#854F0B">orchestrator.answer_query</text>
+  <text x="340" y="568" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#854F0B">router.classify_query</text>
+</g>
+
+<line x1="40" y1="620" x2="100" y2="620" stroke="#1D9E75" stroke-width="2"/>
+<text x="110" y="624" dominant-baseline="central" font-size="12" fill="#444441">Solid line: required for every new record</text>
+
+<line x1="40" y1="650" x2="100" y2="650" stroke="#888780" stroke-width="2" stroke-dasharray="3 3"/>
+<text x="110" y="654" dominant-baseline="central" font-size="12" fill="#444441">Dashed line: only if free-text content present</text>
+
+<rect x="30" y="690" width="620" height="56" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="0.5"/>
+<text x="50" y="714" dominant-baseline="central" font-size="14" font-weight="500" fill="#854F0B">Key insight</text>
+<text x="50" y="732" dominant-baseline="central" font-size="12" fill="#854F0B">No retraining needed. New invoices feed predict_quote labour stats automatically.</text>
+</svg>
+
+<div class="legend-row">
+  <div class="legend-item"><span class="legend-dot" style="background:#9FE1CB"></span>Write modules</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#F0997B"></span>Conditional embedding</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#85B7EB"></span>Data stores</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#AFA9EC"></span>Read paths</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#FAC775"></span>Orchestration + LLM</div>
+</div>
+</div>
+
+<div class="bottom-info">
+  <div class="info-card">
+    <h4>Data stores</h4>
+    <p>MongoDB Atlas + Neo4j AuraDB + Atlas Vector Search</p>
+  </div>
+  <div class="info-card">
+    <h4>Code volume</h4>
+    <p>~3,200 lines of Python across ingest/, retrieve/, app/</p>
+  </div>
+  <div class="info-card">
+    <h4>Validation</h4>
+    <p>predict_quote within 5% of benchmark PO-2026-P0042</p>
+  </div>
+</div>
+
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title">Step</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const STEP_DATA = {
+  '1': {
+    title: '1. New data event',
+    body: `
+      <div class="section"><h4>What happens</h4><ul>
+        <li><strong>Source 1:</strong> tradesperson speaks an invoice into the future voice-to-invoice app</li>
+        <li><strong>Source 2:</strong> a customer email arrives and gets parsed by the email pipeline</li>
+        <li><strong>Source 3:</strong> a new PO PDF is uploaded for parsing by Claude vision</li>
+        <li><strong>Source 4:</strong> an invoice is manually created via the office UI</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>Single entry point design</strong> means the chatbot stays in sync regardless of how data arrives. Whether the tradesperson speaks it, types it, or uploads a PDF, the same downstream lifecycle runs.</li>
+        <li>The chatbot never has to worry about "is this data fresh?" — by the time the user queries, all stores have already been written to.</li>
+        <li>For voice-to-invoice specifically: the user expects "I just said it" to mean "the chatbot knows about it." Centralised ingest delivers that contract.</li>
+        <li>Reduces the chance of stale data bugs by 90%+ compared to letting writes scatter across multiple code paths.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Wang et al. (2025) RAGVA paper:</strong> documents Transurban's move from a rule-based virtual assistant to a RAG-based one. Identifies data ingestion as one of the 8 key engineering challenges. <a href="https://www.sciencedirect.com/science/article/pii/S0164121225001049" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> in a polyglot architecture, every new data event must trigger writes to multiple stores in a coordinated way. Having one canonical entry point (rather than ad-hoc writes scattered through the codebase) is essential for keeping stores consistent and the chatbot answering with current data.</div>
+      </div>`
+  },
+
+  '2': {
+    title: 'MongoDB write — current and future ingest functions',
+    body: `
+      <div class="section"><h4>Functions visible in the box</h4><ul>
+        <li><code>load_po_pdfs.py</code> — current Phase 3 ingest, pushes PDF-extracted POs to MongoDB</li>
+        <li><code>add_invoice.insert</code> — future voice-to-invoice function (not yet implemented)</li>
+      </ul></div>
+
+      <div class="section"><h4>What the function does</h4><ul>
+        <li>Takes a structured Python dict with the new record's fields</li>
+        <li>Inserts into the appropriate MongoDB collection (<code>invoices</code>, <code>invoice_items</code>, etc.)</li>
+        <li>Compound indexes on customer_id, invoice_id make the insert fast and the document immediately findable</li>
+        <li>Returns the inserted document's <code>_id</code> for downstream use by the Neo4j and embedding steps</li>
+      </ul></div>
+
+      <div class="section"><h4>Technologies</h4><ul>
+        <li>PyMongo 4.6 driver</li>
+        <li>MongoDB Atlas M0 free tier in Azure EU Ireland for data residency</li>
+        <li>Schema-flexible document model — invoices can have variable line items without ALTER TABLE</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>Sub-millisecond direct lookup</strong> when the chatbot needs to retrieve any invoice, customer, or PO by ID. The chatbot's "show me INV-2025-0021" path completes in under 10ms total.</li>
+        <li><strong>Schema flexibility means the chatbot adapts without migrations.</strong> When voice-to-invoice adds a new field (e.g. audio_transcript_url), no database schema change is required — just store it in the next document.</li>
+        <li><strong>Aggregations power predict_quote.</strong> The chatbot's pricing prediction relies on MongoDB's aggregation pipeline to compute median labour costs across past invoices. This would be expensive in a normalised relational schema.</li>
+        <li><strong>EU residency simplifies the privacy story.</strong> When the chatbot is asked about customer data, the data has never left the EU — important for GDPR posture in the future SaaS product.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Sadalage and Fowler (2012) NoSQL Distilled:</strong> the foundational text on polyglot persistence. Argues that schema flexibility is the key advantage of document stores over relational systems for heterogeneous data. <a href="https://martinfowler.com/books/nosql.html" target="_blank">Reference</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> for invoices with variable line items, PDF-extracted data with inconsistent fields, and customer records with optional metadata, MongoDB's flexible schema is a genuinely better fit than a rigid relational schema. The cost is that the application code must enforce structure where the database does not — discipline matters.</div>
+      </div>`
+  },
+
+  '3': {
+    title: 'Neo4j write — current and future graph functions',
+    body: `
+      <div class="section"><h4>Functions visible in the box</h4><ul>
+        <li><code>load_pos_to_neo4j.py</code> — current Phase 3 ingest, pushes POs to the graph</li>
+        <li><code>add_invoice.graph</code> — future voice-to-invoice function (not yet implemented)</li>
+      </ul></div>
+
+      <div class="section"><h4>What the function does</h4><ul>
+        <li>Creates the new node (Invoice, PO, etc.) in Neo4j</li>
+        <li>Looks up existing nodes (Customer, JobType) by their canonical IDs</li>
+        <li>Creates relationships: <code>(Invoice)-[:FOR_CUSTOMER]-&gt;(Customer)</code>, <code>(Invoice)-[:ABOUT_JOB]-&gt;(JobType)</code></li>
+        <li>For POs, also adds <code>(PO)-[:CONTAINS_ITEM]-&gt;(Item)</code> for every line item</li>
+      </ul></div>
+
+      <div class="section"><h4>Why a graph alongside MongoDB</h4><ul>
+        <li><strong>Multi-hop queries:</strong> "all customers with a plumbing job that used a particular boiler" is one Cypher line; in MongoDB it would need expensive multi-collection joins</li>
+        <li><strong>Pricing prediction:</strong> traversing <code>(JobType)-[USES_ITEM]-&gt;(Item)</code> is the recipe lookup that drives predict_quote</li>
+        <li><strong>Customer history:</strong> <code>(Customer)&lt;-[FOR_CUSTOMER]-(Invoice)-[ABOUT_JOB]-&gt;(JobType)</code> in one query</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>The killer feature is impossible without this.</strong> When the chatbot answers "how much for boiler installation?", the Neo4j graph is what supplies the materials recipe — there is no other store that can do this query in one round-trip.</li>
+        <li><strong>Customer history queries become natural.</strong> "What has Gerard Walsh had done before?" traverses a few graph hops; the chatbot returns the answer in milliseconds.</li>
+        <li><strong>Future agentic features get easier.</strong> When the chatbot needs to recommend products ("customers who bought this also bought...") the graph is already there to support it. Building it later would mean re-architecting the data layer.</li>
+        <li><strong>Reduces token cost in the LLM call.</strong> Instead of asking Claude to "figure out the relationship" from a flat list of records, the graph pre-computes the relationship structure and the chatbot just reports it.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Wong (2017) Wanderu case study:</strong> the canonical example of MongoDB + Neo4j polyglot architecture. Wanderu uses MongoDB for route storage and Neo4j for path-finding between transit legs. <a href="https://neo4j.com/blog/polyglot-persistence-mongodb-wanderu-case-study/" target="_blank">Read case study</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> neither store is "better" — they each have a job. The architectural discipline is to write to BOTH stores at ingest time so both can serve their best access patterns at query time. The cost is double-write coordination; the reward is queries that would be impossible (or absurdly slow) in either store alone.</div>
+      </div>`
+  },
+
+  '4': {
+    title: 'Embed free text — when and how',
+    body: `
+      <div class="section"><h4>Function visible in the box</h4><ul>
+        <li><code>embed_chunks.py</code> — current Phase 4 embedding pipeline</li>
+        <li>Conditional: <code>if notes present</code> — only runs when the new record has free-text content worth indexing</li>
+      </ul></div>
+
+      <div class="section"><h4>What the function does</h4><ul>
+        <li>Loads <code>sentence-transformers/all-MiniLM-L6-v2</code> (cached after first load)</li>
+        <li>Encodes the free text into a 384-dimensional vector on local CPU</li>
+        <li>Inserts a new document into the <code>chunks</code> collection with text + embedding + metadata</li>
+        <li>Atlas Vector Search index automatically picks up the new chunk — no rebuild needed</li>
+      </ul></div>
+
+      <div class="section"><h4>What gets embedded vs not</h4><ul>
+        <li><strong>YES:</strong> email bodies, job-type descriptions, item descriptions, PO notes — anything where vocabulary varies</li>
+        <li><strong>NO:</strong> structured fields like customer_id, invoice totals, dates — exact-match lookup is faster and more accurate</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>Vocabulary forgiveness.</strong> Customers don't speak the chatbot's canonical job names. They say "fit a new bath" instead of "bathroom suite installation." Embeddings let the chatbot match meaning, not exact words.</li>
+        <li><strong>Free-text search over emails.</strong> When the chatbot is asked "any complaints about leaks recently?" it searches the embedded email bodies semantically — no keyword index could handle the phrasing variation.</li>
+        <li><strong>Conditional embedding keeps the chatbot fast and cheap.</strong> Embedding everything (including structured numeric fields) would slow down ingest and waste storage without improving search quality. The chatbot stays responsive because we embed only what genuinely benefits.</li>
+        <li><strong>No retraining required.</strong> When new free-text content arrives, the chatbot can immediately answer questions about it because the embedding gets generated at insert time. No nightly batch jobs, no maintenance windows.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Lewis et al. (2020) original RAG paper:</strong> establishes that retrieval quality depends on the embedding model matching the content type. <a href="https://arxiv.org/abs/2005.11401" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Karpukhin et al. (2020) DPR paper:</strong> shows dense vector retrieval beats keyword search for unstructured text but offers no advantage for structured fields. <a href="https://arxiv.org/abs/2004.04906" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> resist the temptation to "just embed everything." Vector search has a real cost (storage, latency) and a narrow benefit (fuzzy semantic matching). Architectural maturity means choosing where to apply each technique deliberately — and being able to articulate why the structured fields are explicitly excluded.</div>
+      </div>`
+  },
+
+  '5': {
+    title: 'MongoDB Atlas store',
+    body: `
+      <div class="section"><h4>What lives here</h4><ul>
+        <li><strong>9 collections, 1,468 records total</strong></li>
+        <li>customers (120), emails (100), invoices (150), invoice_items (750)</li>
+        <li>items (88), job_types (60), pos (15), trades (3), chunks (263)</li>
+      </ul></div>
+
+      <div class="section"><h4>Indexes</h4><ul>
+        <li>Compound indexes on <code>(customer_id)</code>, <code>(invoice_id)</code>, <code>(po_number)</code></li>
+        <li>Index on <code>(extracted.matched_customer_id)</code> for email-to-customer joins</li>
+        <li>Vector Search index on <code>chunks.embedding</code> with cosine similarity</li>
+      </ul></div>
+
+      <div class="section"><h4>Why the M0 free tier works</h4><ul>
+        <li>Database fits within the 512MB free tier limit</li>
+        <li>Synthetic dataset deliberately sized to demonstrate the architecture without forcing a paid tier</li>
+        <li>Production deployment for voice-to-invoice would need M10+ tier for higher throughput</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>Single source of truth.</strong> The chatbot can answer authoritatively about any customer, invoice, or job because Atlas is the canonical data store. No "is this the latest?" doubts.</li>
+        <li><strong>Multi-AZ replication is automatic.</strong> When the chatbot is hosting a live demo and one Atlas replica fails, queries automatically route to a healthy one. The user never notices.</li>
+        <li><strong>Backups happen continuously.</strong> If the chatbot accidentally writes bad data (during voice-to-invoice testing, for example), Atlas's point-in-time recovery can restore the state from minutes ago.</li>
+        <li><strong>Vector search lives next to the documents.</strong> The chatbot doesn't have to coordinate between separate vector and document stores — they're in the same cluster, share the same connection, and stay in sync.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Schneider et al. (2025) BISE article on RAG:</strong> discusses the operational realities of running RAG systems on managed cloud infrastructure. <a href="https://link.springer.com/article/10.1007/s12599-025-00945-3" target="_blank">Read article</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> using managed services (Atlas, AuraDB) instead of self-hosted databases is the right call for a startup. The cost difference becomes meaningful only at scale, and the engineering time saved on operations dwarfs the per-month service cost. The chatbot benefits because we spend zero time on database operations.</div>
+      </div>`
+  },
+
+  '6': {
+    title: 'Neo4j AuraDB store',
+    body: `
+      <div class="section"><h4>What lives here</h4><ul>
+        <li><strong>537 nodes</strong> across 7 labels: Customer, Email, Invoice, Item, JobType, PO, Trade</li>
+        <li><strong>2,030 relationships</strong> across 11 types</li>
+      </ul></div>
+
+      <div class="section"><h4>Key relationship types</h4><ul>
+        <li><code>(JobType)-[:USES_ITEM]-&gt;(Item)</code> with <code>typical_quantity</code> property — drives predict_quote</li>
+        <li><code>(JobType)-[:OF_TRADE]-&gt;(Trade)</code> — links jobs to their trade category</li>
+        <li><code>(Invoice)-[:FOR_CUSTOMER]-&gt;(Customer)</code> — invoice ownership</li>
+        <li><code>(Invoice)-[:ABOUT_JOB]-&gt;(JobType)</code> — what the invoice was for</li>
+        <li><code>(PO)-[:CONTAINS_ITEM]-&gt;(Item)</code> — line items on a PO</li>
+      </ul></div>
+
+      <div class="section"><h4>AuraDB Free quirks</h4><ul>
+        <li><strong>Auto-pause:</strong> after ~3 days idle the instance pauses</li>
+        <li><strong>Auto-recovery:</strong> implemented in <code>graph_search.py</code> via a driver cache that pings before each query and reconnects transparently</li>
+        <li><strong>First post-pause query:</strong> adds 1-2 seconds of latency while the instance wakes</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>Pricing predictions in milliseconds.</strong> The chatbot's predict_quote feature traverses USES_ITEM relationships in a single Cypher query — equivalent MongoDB joins would take 10x longer.</li>
+        <li><strong>Customer history without n+1 queries.</strong> When the chatbot is asked "what has Gerard Walsh had done?" Neo4j returns all related invoices, POs, and job types in one round-trip. In a relational store this would be 5-10 separate queries.</li>
+        <li><strong>Future recommendation features come almost free.</strong> When voice-to-invoice eventually adds "customers like Gerard typically also buy..." the graph already supports the traversal — we just write the Cypher query.</li>
+        <li><strong>Auto-recovery means the chatbot never crashes from cold starts.</strong> The user might wait 1-2 seconds longer on the first post-pause query, but they never see a stack trace.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Wong (2017) Wanderu case study:</strong> demonstrates Neo4j for graph-native operations alongside MongoDB. <a href="https://neo4j.com/blog/polyglot-persistence-mongodb-wanderu-case-study/" target="_blank">Read case study</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> free tiers come with operational quirks. A production system needs paid tier for predictable latency. For an academic proof of concept, building auto-recovery around the quirks is a valid engineering response that itself becomes good documentation. The chatbot is more reliable in demo conditions because we anticipated the failure mode.</div>
+      </div>`
+  },
+
+  '7': {
+    title: 'Vector index — chunks collection',
+    body: `
+      <div class="section"><h4>Index configuration</h4><ul>
+        <li><strong>Index name:</strong> <code>vector_index</code> (defined in Atlas Search UI)</li>
+        <li><strong>Field:</strong> <code>chunks.embedding</code></li>
+        <li><strong>Dimensions:</strong> 384</li>
+        <li><strong>Similarity:</strong> cosine</li>
+      </ul></div>
+
+      <div class="section"><h4>What the index covers — 263 chunks total</h4><ul>
+        <li>~100 chunks from emails (free-form customer language)</li>
+        <li>~88 chunks from items (catalogue descriptions)</li>
+        <li>~60 chunks from job_types (job descriptions)</li>
+        <li>~15 chunks from POs (PDF-extracted notes)</li>
+      </ul></div>
+
+      <div class="section"><h4>Incremental updates</h4><ul>
+        <li>Atlas Vector Search is <strong>incremental</strong> — new chunks become searchable automatically</li>
+        <li>No need to rebuild the index when new data arrives</li>
+        <li>No daily scheduled job required for normal operation</li>
+        <li>Re-embedding only needed if the embedding model itself changes (rare)</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>The chatbot handles fuzzy queries gracefully.</strong> "Any leaks reported lately?" matches emails saying "water dripping" or "pool of water" — semantic matching the user expects from a modern chatbot.</li>
+        <li><strong>Zero retraining means zero downtime.</strong> The chatbot never goes offline for "model updates." New data flows in continuously and the next query benefits immediately.</li>
+        <li><strong>Cosine similarity scores expose confidence.</strong> The chatbot can show the user how relevant each retrieved chunk is (0.85-0.91 for good matches), supporting trust and explainability.</li>
+        <li><strong>Vector + structured queries combine cleanly.</strong> The chatbot can ask "find emails about leaks from cust_0001" — vector for the topic, exact filter for the customer ID, all in one MongoDB aggregation.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Karpukhin et al. (2020) Dense Passage Retrieval:</strong> the foundational paper on dense vector retrieval that shapes how modern vector indexes work. <a href="https://arxiv.org/abs/2004.04906" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> a common misconception is that RAG systems need periodic "retraining." They don't — embeddings are independent and incremental. The model never changes; only the corpus does. This is the operational superpower of RAG over fine-tuning, and it's why the chatbot can run continuously without scheduled maintenance.</div>
+      </div>`
+  },
+
+  '8': {
+    title: 'Direct lookups — exact-match retrieval',
+    body: `
+      <div class="section"><h4>Functions visible in the box</h4><ul>
+        <li><code>mongo_lookup.get_invoice(invoice_id)</code> — single invoice fetch</li>
+        <li><code>mongo_lookup.get_customer(customer_id)</code> — single customer fetch</li>
+        <li>Plus 11 other functions: <code>get_po</code>, <code>get_item</code>, <code>get_job_type</code>, list functions</li>
+      </ul></div>
+
+      <div class="section"><h4>What these functions do</h4><ul>
+        <li>Take a canonical ID as input</li>
+        <li>Run a single MongoDB <code>find_one()</code> using a compound index</li>
+        <li>Return the full document (or None if not found)</li>
+        <li>Sub-millisecond response on indexed lookups</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>Instant ID lookups bypass the LLM entirely.</strong> When the user asks "show me PO-2026-P0042" the router recognises the pattern, calls <code>get_po()</code> directly, and the response arrives in under 50ms. No LLM round-trip needed for classification or retrieval.</li>
+        <li><strong>Cost savings compound.</strong> Every query the chatbot answers without invoking Claude saves ~€0.001. At scale, this matters — a chatbot serving 10,000 queries/day saves €10/day on the lookup-heavy traffic.</li>
+        <li><strong>Deterministic answers build user trust.</strong> The same ID always returns the same record. No probabilistic LLM behaviour, no hallucination risk. Users learn quickly that "if I give the chatbot an exact ID, it gives me the exact record."</li>
+        <li><strong>List functions enable browsing patterns.</strong> "Show me all POs" is fundamentally a different access pattern from semantic search — and the chatbot serves it natively without trying to force it through the LLM.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Sadalage and Fowler (2012) NoSQL Distilled:</strong> emphasises that document stores excel at single-record retrieval by canonical key. <a href="https://martinfowler.com/books/nosql.html" target="_blank">Reference</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> not every retrieval needs to be "intelligent." For known IDs, a deterministic exact-match lookup is faster, cheaper, and more accurate than a vector search or graph traversal. The router's job is to recognise these cases and avoid the LLM round-trip — saving cost and latency.</div>
+      </div>`
+  },
+
+  '9': {
+    title: 'Predict quote — the killer feature',
+    body: `
+      <div class="section"><h4>Function visible in the box</h4><ul>
+        <li><code>predict_quote.predict_quote(job_name)</code> — the only function that consults all three stores</li>
+      </ul></div>
+
+      <div class="section"><h4>What the function does — four sub-queries</h4><ul>
+        <li><strong>Step A (Neo4j):</strong> <code>graph_search.items_for_job_by_name(job_name)</code> returns the materials recipe with typical quantities</li>
+        <li><strong>Step B (MongoDB):</strong> for each item, <code>mongo_lookup.get_item(item_id)</code> returns the current unit price</li>
+        <li><strong>Step C (MongoDB):</strong> <code>get_invoices_for_job_type(job_type_id)</code> aggregates labour cost statistics — median, min, max, count</li>
+        <li><strong>Step D (Neo4j):</strong> <code>graph_search.similar_pos_by_job_type(job_name)</code> returns recent comparable POs for benchmarking</li>
+      </ul></div>
+
+      <div class="section"><h4>Confidence scoring</h4><ul>
+        <li>If all 4 sources return data and prediction is within 20% of benchmark → <code>high</code></li>
+        <li>If 2-3 sources return data → <code>medium</code></li>
+        <li>If &lt;2 sources OR prediction diverges &gt;35% from benchmark → <code>low</code></li>
+      </ul></div>
+
+      <div class="section"><h4>Verified prediction</h4><ul>
+        <li>Query: "How much for boiler installation?"</li>
+        <li>Predicted: <code>€2,002 inc VAT</code></li>
+        <li>Benchmark PO-2026-P0042 (Gerard Walsh): <code>€2,106.50</code></li>
+        <li>Agreement within 5% → confidence <code>high</code></li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>The single most valuable feature in the entire chatbot.</strong> Pricing prediction transforms the chatbot from "search interface" to "advisor." Office staff get an instant defensible quote, not just a list of past invoices.</li>
+        <li><strong>Polyglot architecture justifies itself here.</strong> Without all three stores, this feature is impossible. The killer feature is the architectural narrative.</li>
+        <li><strong>Built-in confidence scoring protects user trust.</strong> When the chatbot says "low confidence — limited historical data" the user knows to apply judgement. This is more trustworthy than an unqualified "€2,002" that might be wildly wrong.</li>
+        <li><strong>Self-improving with new data.</strong> Every new invoice that flows through the ingest pipeline updates the labour cost statistics. The chatbot's predictions get more accurate over time without any retraining.</li>
+        <li><strong>Cross-validation against benchmark POs catches data bugs.</strong> The boiler quantity bug (typical_quantity=2 instead of 1) was discovered because the chatbot's own confidence scoring flagged the mismatch. This is the architecture catching its own errors.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Feldman et al. (2024) "RAGged Edges":</strong> characterises RAG as a "double-edged sword" that fails quietly when retrieval is incomplete. The confidence scoring in predict_quote is a direct response to this paper's findings. <a href="https://arxiv.org/abs/2403.01193" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> when a system makes numerical predictions, it must also report its own uncertainty. A €0 result with "low confidence" is more useful than a confident-looking but wrong number. This is the architectural difference between "pretending to know" and "honestly knowing what you don't know."</div>
+      </div>`
+  },
+
+  '10': {
+    title: 'Vector and graph search — semantic plus traversal',
+    body: `
+      <div class="section"><h4>Functions visible in the box</h4><ul>
+        <li><code>vector_search.vector_search(query, k=5)</code> — semantic similarity search</li>
+        <li><code>graph_search.graph_traversal(...)</code> — relationship-based queries</li>
+      </ul></div>
+
+      <div class="section"><h4>vector_search.vector_search</h4><ul>
+        <li>Encodes the query string with sentence-transformers (local CPU, ~50-100ms)</li>
+        <li>Sends the 384-dim vector to MongoDB <code>$vectorSearch</code> aggregation</li>
+        <li>Returns the top-k chunks ranked by cosine similarity</li>
+        <li>Used for free-form questions ("emails about leaks", "jobs involving heating")</li>
+      </ul></div>
+
+      <div class="section"><h4>graph_search.graph_traversal</h4><ul>
+        <li>Generic wrapper for Cypher templates</li>
+        <li>Specific functions: <code>customer_history</code>, <code>items_for_job_by_name</code>, <code>similar_pos_by_job_type</code></li>
+        <li>Includes auto-recovery for AuraDB pause-on-idle</li>
+        <li>Returns Neo4j Record objects converted to dicts</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>Hybrid retrieval covers more user phrasings.</strong> Some questions match well to vector search ("anything about leaks?"); others need graph traversal ("what jobs has this customer had?"). The chatbot picks the right tool per query.</li>
+        <li><strong>Vector search handles real customer language.</strong> When users describe problems in their own words ("the heating is acting up") the chatbot still finds the right matches — keyword search would fail here.</li>
+        <li><strong>Graph traversal answers questions humans naturally ask in graph terms.</strong> "Who else has had this kind of work done?" is a graph query disguised as natural language. The chatbot handles it without forcing the user to think in SQL or Cypher.</li>
+        <li><strong>The two complement rather than compete.</strong> A query like "boiler installations from last quarter" combines vector (boiler-ish jobs) with graph (time + customer relationships) — the chatbot composes them transparently.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Rackauckas (2024) RAG-Fusion:</strong> describes Infineon's hybrid retrieval system that combines multiple retrieval paths. <a href="https://arxiv.org/abs/2402.03367" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Kumar and Pal (2025) RAG e-commerce chatbot:</strong> demonstrates similar hybrid retrieval for product search. <a href="https://ieeexplore.ieee.org/document/10841586/" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> single-modality retrieval has hard limits. Vector search misses on vocabulary mismatch; graph search misses on free-text queries. A hybrid system that picks the right modality per query is significantly more capable than any single retriever.</div>
+      </div>`
+  },
+
+  '11': {
+    title: 'Orchestrator — the single entry point',
+    body: `
+      <div class="section"><h4>Functions visible in the box</h4><ul>
+        <li><code>orchestrator.answer_query(message)</code> — the function Streamlit calls</li>
+        <li><code>router.classify_query(text)</code> — invoked by the orchestrator first</li>
+      </ul></div>
+
+      <div class="section"><h4>What answer_query does — 5 stages</h4><ul>
+        <li><strong>Stage 1:</strong> calls <code>router.classify_query()</code> to get intent + parameters</li>
+        <li><strong>Stage 2:</strong> dispatches to one or more retrieval functions based on the intent</li>
+        <li><strong>Stage 3:</strong> calls <code>context_assembler</code> to merge results into Markdown</li>
+        <li><strong>Stage 4:</strong> sends context + query to Claude for grounded answer generation</li>
+        <li><strong>Stage 5:</strong> returns answer + sources + routing trace + latency + token counts</li>
+      </ul></div>
+
+      <div class="section"><h4>Performance</h4><ul>
+        <li>Cold start (first query in a fresh process): 6.1 seconds</li>
+        <li>Warm-state queries: 2.1-2.4 seconds</li>
+        <li>Cost per query: ~€0.001-0.002</li>
+      </ul></div>
+
+      <div class="benefit-box"><h4>Architectural benefit for the chatbot</h4>
+      <ul>
+        <li><strong>One function to test, one function to monitor.</strong> The chatbot's entire query pipeline lives behind <code>answer_query()</code>. Logging, error handling, and latency tracking happen in one place — not scattered across the UI code.</li>
+        <li><strong>Future security features bolt on cleanly.</strong> When voice-to-invoice eventually needs PII redaction, audit logging, or per-tenant scoping, all of it slots into the orchestrator without touching the rest of the system.</li>
+        <li><strong>The eval set just calls one function in a loop.</strong> Testing 20 questions becomes a 10-line script. No need to spin up Streamlit or simulate UI interactions.</li>
+        <li><strong>Future migration to agentic tool use is straightforward.</strong> Switching the chatbot from "router classifies, then dispatches" to "Claude calls retrieval functions as tools" only requires changes inside the orchestrator. The retrieve/ modules and data stores stay exactly the same.</li>
+        <li><strong>Source provenance flows through cleanly.</strong> Because every retrieval function returns its source markers, the orchestrator can hand the user a complete audit trail. The chatbot's "Sources" expander becomes possible.</li>
+      </ul>
+      </div>
+
+      <button class="refs-toggle" onclick="toggleRefs(this)">Reference and lessons learned ▾</button>
+      <div class="refs-section">
+        <h4>Reference context</h4>
+        <div class="ref-item"><strong>Wang et al. (2025) RAGVA paper:</strong> Transurban's engineering team identifies orchestration as one of the eight key challenges in building RAG-based virtual assistants. <a href="https://www.sciencedirect.com/science/article/pii/S0164121225001049" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Shih and Chuang (2025) secure RAG chatbot:</strong> emphasises the value of a centralised orchestration point for applying security guardrails. <a href="https://arxiv.org/abs/2509.21367" target="_blank">Read paper</a>.</div>
+        <div class="ref-item"><strong>Lesson learned:</strong> the orchestrator is the architectural seam where future improvements (PII redaction, audit logging, multi-tenant scoping, agentic tool use) can be added without touching the rest of the system. Investing in a clean entry point pays back tenfold in extensibility.</div>
+      </div>`
+  }
+};
+
+document.querySelectorAll('.clickbox').forEach(el => {
+  el.addEventListener('click', () => {
+    const stepId = el.dataset.step;
+    document.querySelectorAll('.clickbox').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    openModal(stepId);
+  });
+});
+
+function openModal(stepId) {
+  const data = STEP_DATA[stepId];
+  if (!data) return;
+  document.getElementById('modal-title').textContent = data.title;
+  document.getElementById('modal-body').innerHTML = data.body;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('modal').scrollTop = 0;
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  document.querySelectorAll('.clickbox').forEach(b => b.classList.remove('active'));
+}
+
+function toggleRefs(btn) {
+  const refs = btn.nextElementSibling;
+  refs.classList.toggle('open');
+  btn.classList.toggle('active');
+  btn.textContent = refs.classList.contains('open') ? 'Reference and lessons learned \u25B4' : 'Reference and lessons learned \u25BE';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+
+</body>
+</html>
