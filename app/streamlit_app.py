@@ -24,7 +24,7 @@ from dashboard import render_dashboard
 
 # Page configuration
 st.set_page_config(
-    page_title="Quotes and Customers Manager",
+    page_title="Quotes Manager",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -126,7 +126,7 @@ with st.sidebar:
 
 
 # ============ MAIN HEADER ============
-st.title("Quotes Manager")
+st.title("Quotes and Customer Manager")
 st.caption("AI assistant for Irish trades")
 
 
