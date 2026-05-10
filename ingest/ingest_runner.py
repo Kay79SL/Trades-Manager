@@ -19,14 +19,9 @@ import sys
 from pathlib import Path
 
 # ── Paths ─────────────────────────────────────────────────────
-# Project root = one level up from this ingest/ folder
 PROJECT_ROOT = Path(__file__).parent.parent
 INGEST_DIR   = PROJECT_ROOT / "ingest"
-
-# sys.executable = correct Python in any environment:
-#   local venv  → F:\Apps\DACARag\venv\Scripts\python.exe
-#   Streamlit Cloud → /usr/local/bin/python  (or wherever it lives)
-PYTHON = sys.executable
+PYTHON       = sys.executable   # correct Python in any environment
 
 
 def _run(script_name: str) -> str:
@@ -45,10 +40,10 @@ def _run(script_name: str) -> str:
 
     result = subprocess.run(
         [PYTHON, str(script_path)],
-        cwd=str(PROJECT_ROOT),      # run from project root so .env / secrets are found
+        cwd=str(PROJECT_ROOT),
         capture_output=True,
         text=True,
-        timeout=300,                # 5 min max per step
+        timeout=300,
     )
 
     output = (result.stdout or "").strip()
@@ -66,12 +61,12 @@ def _run(script_name: str) -> str:
 
 
 # ─────────────────────────────────────────────────────────────
-# Step 1 — Load CSVs into MongoDB collections
+# Step 1 — Load CSVs → MongoDB collections
 # ─────────────────────────────────────────────────────────────
 def run_load_mongo() -> str:
     """
     Calls load_mongo.py — reads CSVs from GridFS csv_files bucket
-    and upserts records into customers, invoices, job_types, items,
+    and upserts into customers, invoices, job_types, items,
     job_items, invoice_items collections.
     """
     return _run("load_mongo.py")
@@ -85,7 +80,7 @@ def run_extract_pos() -> str:
     Calls extract_pos_from_pdf.py then load_po_pdfs.py in sequence.
     extract_pos_from_pdf.py — reads PDFs from GridFS po_files bucket,
                                sends to Claude Haiku for field extraction.
-    load_po_pdfs.py         — loads the structured results into pos collection.
+    load_po_pdfs.py         — loads structured results into pos collection.
     """
     extract_summary = _run("extract_pos_from_pdf.py")
     load_summary    = _run("load_po_pdfs.py")
@@ -93,7 +88,43 @@ def run_extract_pos() -> str:
 
 
 # ─────────────────────────────────────────────────────────────
-# Step 3 — Generate embeddings → Vector index
+# Step 3 — Extract entities from emails
+# ─────────────────────────────────────────────────────────────
+def run_extract_entities() -> str:
+    """
+    Calls extract_entities.py — reads emails from GridFS email_files bucket,
+    extracts customer and job entities using Claude Haiku,
+    and writes structured records into the emails collection.
+    """
+    return _run("extract_entities.py")
+
+
+# ─────────────────────────────────────────────────────────────
+# Step 4 — Load MongoDB data → Neo4j graph
+# ─────────────────────────────────────────────────────────────
+def run_load_neo4j() -> str:
+    """
+    Calls load_neo4j.py — projects customers, invoices, job types,
+    and items from MongoDB into Neo4j as labelled property graph nodes
+    and relationships.
+    """
+    return _run("load_neo4j.py")
+
+
+# ─────────────────────────────────────────────────────────────
+# Step 5 — Load POs → Neo4j graph
+# ─────────────────────────────────────────────────────────────
+def run_load_pos_neo4j() -> str:
+    """
+    Calls load_pos_to_neo4j.py — creates PO nodes in Neo4j and
+    connects them to Customer, JobType, and Item nodes via
+    FOR_CUSTOMER, FOR_JOB, and CONTAINS_ITEM relationships.
+    """
+    return _run("load_pos_to_neo4j.py")
+
+
+# ─────────────────────────────────────────────────────────────
+# Step 6 — Generate embeddings → Vector index
 # ─────────────────────────────────────────────────────────────
 def run_embed_documents() -> str:
     """
