@@ -221,25 +221,25 @@ with tab_chat:
                 st.divider()
                 st.caption("**Stores used:** " + ", ".join(ev["stores_used"]))
 
-    with col_chat:
+    with col_chat: # Render the chat interface. We display the conversation history by iterating over st.session_state.messages, which contains all user and assistant messages. For each message, we use st.chat_message to render it in the appropriate style (user or assistant).
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
-                if msg.get("metadata"):
-                    meta = msg["metadata"]
-                    with st.expander(
-                        f"Sources ({len(meta.get('sources', []))}) · "
-                        f"{meta.get('latency_ms', 0)} ms · "
-                        f"{meta.get('routing', {}).get('intent', '?')}"
-                    ):
-                        if meta.get("sources"):
-                            st.markdown("**Sources:**")
-                            for src in meta["sources"]:
-                                st.markdown(f"- {src}")
-                        if meta.get("routing"):
-                            st.markdown("---")
-                            st.markdown("**Routing:**")
-                            st.json(meta["routing"])
+                #if msg.get("metadata"): # Optionally show metadata for each message in an expander. This can include the sources retrieved, latency, and routing information for each assistant response, which can be useful for debugging and evaluation purposes.
+                    #meta = msg["metadata"]
+                    #with st.expander(
+                        #f"Sources ({len(meta.get('sources', []))}) · "
+                        #f"{meta.get('latency_ms', 0)} ms · "
+                        #f"{meta.get('routing', {}).get('intent', '?')}"
+                    #):
+                        #if meta.get("sources"):
+                            #st.markdown("**Sources:**")
+                            #for src in meta["sources"]:
+                                #st.markdown(f"- {src}")
+                        #if meta.get("routing"):
+                            #st.markdown("---")
+                            #st.markdown("**Routing:**")
+                            #st.json(meta["routing"])
 
         typed_input = st.chat_input("Ask about a customer, quote, or job...")
 
