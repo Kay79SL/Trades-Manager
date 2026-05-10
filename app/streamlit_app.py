@@ -10,140 +10,135 @@ from __future__ import annotations
 
 import sys
 import time
+import io
 from pathlib import Path
 
-# Add project root to path so we can import retrieve.*
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import gridfs
+import pandas as pd
 import streamlit as st
 from sentence_transformers import SentenceTransformer
 
 from retrieve.orchestrator import answer_query
 from dashboard import render_dashboard
+from dashboard import get_mongo_db
 
 
+# ─────────────────────────────────────────────────────────────
 # Page configuration
+# ─────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Quotes Manager",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Autumn pastel theme via CSS injection
 st.markdown("""
 <style>
     .stApp { background-color: #FBF8F2; }
-    .confidence-high { color: #587858; font-weight: 600; }
+    .confidence-high   { color: #587858; font-weight: 600; }
     .confidence-medium { color: #C2942F; font-weight: 600; }
-    .confidence-low { color: #B85A5A; font-weight: 600; }
-
-    /* Sample-query chips */
+    .confidence-low    { color: #B85A5A; font-weight: 600; }
     .chip-row .stButton > button {
-        background: #FDFAF6;
-        border: 1px solid #E5DDD2;
-        color: #2D2520;
-        font-size: 0.85rem;
-        font-weight: 500;
-        padding: 6px 12px;
-        border-radius: 18px;
-        transition: all 0.15s;
+        background: #FDFAF6; border: 1px solid #E5DDD2; color: #2D2520;
+        font-size: 0.85rem; font-weight: 500; padding: 6px 12px;
+        border-radius: 18px; transition: all 0.15s;
     }
     .chip-row .stButton > button:hover {
-        background: #F5EFE5;
-        border-color: #B85A5A;
-        color: #B85A5A;
+        background: #F5EFE5; border-color: #B85A5A; color: #B85A5A;
     }
     .chip-label {
-        color: #786558;
-        font-size: 0.85rem;
-        margin: 0.5rem 0 0.4rem 0;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        color: #786558; font-size: 0.85rem; margin: 0.5rem 0 0.4rem 0;
+        text-transform: uppercase; letter-spacing: 0.04em;
     }
-
-    /* Bottom-of-page footer */
     .page-footer {
-        margin-top: 3rem;
-        padding-top: 0.6rem;
-        border-top: 1px solid #E5DDD2;
-        color: #A89484;
-        font-size: 0.7rem;
-        line-height: 1.4;
+        margin-top: 3rem; padding-top: 0.6rem;
+        border-top: 1px solid #E5DDD2; color: #A89484;
+        font-size: 0.7rem; line-height: 1.4;
     }
-    .footer-status {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 18px;
-        align-items: center;
-        justify-content: flex-start;
-    }
-    .footer-status .label {
-        font-weight: 600;
-        color: #786558;
-    }
+    .footer-status { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+    .footer-status .label { font-weight: 600; color: #786558; }
     .footer-clear .stButton > button {
-        background: transparent;
-        border: 1px solid #E5DDD2;
-        color: #786558;
-        font-size: 0.7rem;
-        padding: 2px 10px;
-        border-radius: 6px;
-        height: auto;
-        min-height: 0;
-        line-height: 1.2;
+        background: transparent; border: 1px solid #E5DDD2; color: #786558;
+        font-size: 0.7rem; padding: 2px 10px; border-radius: 6px;
+        height: auto; min-height: 0; line-height: 1.2;
     }
-    .footer-clear .stButton > button:hover {
-        border-color: #B85A5A;
-        color: #B85A5A;
-    }
+    .footer-clear .stButton > button:hover { border-color: #B85A5A; color: #B85A5A; }
 </style>
 """, unsafe_allow_html=True)
 
-# Preload embedding model at startup to avoid latency on first query
+
+# ─────────────────────────────────────────────────────────────
+# Cached resources
+# ─────────────────────────────────────────────────────────────
 @st.cache_resource
 def preload_models():
     return SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-# Note: the model is also cached inside retrieve.vector_search, so this is just to warm it up at app startup
 with st.spinner("Loading embedding model (one-time, ~10 sec)..."):
     _ = preload_models()
 
 
-# Session state initialisation
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "last_prediction" not in st.session_state:
-    st.session_state.last_prediction = None
-if "pending_query" not in st.session_state:
-    st.session_state.pending_query = None
+@st.cache_resource
+def get_gridfs_buckets():
+    """
+    Returns all three named GridFS buckets used by this project.
+      csv_files   — seed CSVs
+      po_files    — supplier PO PDFs
+      email_files — raw .eml files
+    """
+    db = get_mongo_db()
+    return {
+        "csv":   gridfs.GridFS(db, collection="csv_files"),
+        "pdf":   gridfs.GridFS(db, collection="po_files"),
+        "email": gridfs.GridFS(db, collection="email_files"),
+    }
 
 
-# ============ SIDEBAR ============
+# ─────────────────────────────────────────────────────────────
+# Session state
+# ─────────────────────────────────────────────────────────────
+if "messages"        not in st.session_state: st.session_state.messages        = []
+if "last_prediction" not in st.session_state: st.session_state.last_prediction = None
+if "pending_query"   not in st.session_state: st.session_state.pending_query   = None
+if "ingest_log"      not in st.session_state: st.session_state.ingest_log      = []
+
+
+# ─────────────────────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("Trade Manager")
     st.caption("AI assistant for Irish trades")
-    # Dashboard filters get appended here by render_dashboard()
 
 
-# ============ MAIN HEADER ============
+# ─────────────────────────────────────────────────────────────
+# MAIN HEADER
+# ─────────────────────────────────────────────────────────────
 st.title("Quotes and Customer Manager")
 st.caption("AI assistant for Irish trades")
 
 
-# ============ TABS ============
-tab_dashboard, tab_chat = st.tabs(["Dashboard", "Chatbot"]) # tabs for PO management, customer management, etc
+# ─────────────────────────────────────────────────────────────
+# TABS
+# ─────────────────────────────────────────────────────────────
+tab_dashboard, tab_chat, tab_upload = st.tabs(["Dashboard", "Chatbot", "Data Upload"])
 
 
-#  TAB 1: BI DASHBOARD 
+# ══════════════════════════════════════════════════════════════
+#  TAB 1 — BI DASHBOARD
+# ══════════════════════════════════════════════════════════════
 with tab_dashboard:
     render_dashboard()
 
 
-#  TAB 2: CHATBOT 
+# ══════════════════════════════════════════════════════════════
+#  TAB 2 — CHATBOT
+# ══════════════════════════════════════════════════════════════
 with tab_chat:
 
-    st.markdown('<p class="chip-label">Try one of these</p>', unsafe_allow_html=True) # predefined queries as "chips" for easy testing - these will populate the input and trigger the same logic as a typed query, 
-    # but are more user-friendly than having to copy-paste from a doc or type out manually. The chips are implemented as buttons with custom CSS styling.
+    st.markdown('<p class="chip-label">Try one of these</p>', unsafe_allow_html=True)
 
     sample_queries = [
         "How much for a boiler installation?",
@@ -167,62 +162,46 @@ with tab_chat:
 
     col_chat, col_quote = st.columns([2, 1])
 
-    # Right column: Predicted Quote
-    # This section displays the predicted quote details after a query is answered. It shows the job type, confidence level, 
-    # breakdown of materials and labour costs, totals, benchmark comparison, and sources used. 
-    # The information is pulled from st.session_state.last_prediction which is updated after each query that returns a prediction.
     with col_quote:
         st.subheader("Predicted Quote")
-        pred = st.session_state.last_prediction # this gets set in the raw_results of the query answer, and is expected to have a structure like:
-       
-        if not pred: # if there's no prediction data, show an info message prompting the user to ask a pricing question to see predictions here. 
-            # This encourages interaction and lets the user know what kind of queries will populate this
+        pred = st.session_state.last_prediction
+
+        if not pred:
             st.info(
                 "Ask a pricing question to see predictions here.\n\n"
                 "Example: *How much for a boiler installation?*"
             )
-        else: # if there is prediction data, display the details in a structured format. The confidence level is styled with CSS classes for visual emphasis.
+        else:
             st.markdown(f"**Job:** {pred.get('job_type', '?')}")
             confidence = pred.get("confidence", "unknown")
-            st.markdown( # the confidence level is displayed with a colored label using CSS classes defined earlier. The confidence value is converted to uppercase for emphasis.
+            st.markdown(
                 f"**Confidence:** "
                 f"<span class='confidence-{confidence}'>{confidence.upper()}</span>",
                 unsafe_allow_html=True,
             )
-
             st.divider()
-            # The materials section shows a breakdown of the predicted materials cost, including a subtotal, number of recipe items, 
-            # and a list of the top items contributing to the cost. This gives the user insight into how the materials cost was calculated.
-            
             mat = pred.get("materials", {})
             if mat.get("subtotal", 0) > 0:
-                st.markdown(f"**Materials**  €{mat['subtotal']:,.2f}") # the subtotal for materials is displayed prominently, and then a breakdown of the items is shown below in smaller text. 
-                                                                        # The number of recipe items is also noted to give context to the breakdown.
+                st.markdown(f"**Materials**  €{mat['subtotal']:,.2f}")
                 st.caption(f"From {mat.get('n_recipe_items', 0)} graph recipe items")
-                for item in mat.get("items", [])[:5]: # show up to 5 items from the materials breakdown, with their name, quantity, and unit price. This gives the user a sense of what materials are contributing to the cost.
+                for item in mat.get("items", [])[:5]:
                     st.markdown(
                         f"<small>• {item['item_name']}  "
                         f"({item['quantity']} × €{item['unit_price']:.2f})</small>",
                         unsafe_allow_html=True,
-                    ) # if there are more than 5 items, show a caption indicating how many more items there are that are not displayed, 
-                    # to give the user a sense of the full breakdown without overwhelming them with too much detail in the main view.
+                    )
                 if len(mat.get("items", [])) > 5:
                     st.caption(f"...and {len(mat['items']) - 5} more")
 
-            # The labour section shows the predicted labour cost based on past invoices for similar jobs. 
-            # It includes the median cost, number of invoices considered, and the range of costs from those invoices. 
-            # This helps the user understand how the labour cost was derived and its variability.
             lab = pred.get("labour", {})
             if lab.get("median_eur", 0) > 0:
                 st.divider()
                 st.markdown(f"**Labour**  €{lab['median_eur']:,.2f}")
                 st.caption(
                     f"Median of {lab.get('n_invoices', 0)} past invoices  "
-                    f"(€{lab.get('min_eur', 0):.0f}-€{lab.get('max_eur', 0):.0f})"
+                    f"(€{lab.get('min_eur', 0):.0f}–€{lab.get('max_eur', 0):.0f})"
                 )
 
-            # The totals section shows the overall predicted cost for the job, including a breakdown of the subtotal excluding VAT, 
-            # the VAT amount, and the total including VAT. This gives the user a clear summary of the predicted quote for the job.
             totals = pred.get("totals", {})
             if totals.get("total_inc_vat", 0) > 0:
                 st.divider()
@@ -230,9 +209,6 @@ with tab_chat:
                 st.markdown(f"**VAT 23%**  €{totals.get('vat_23pct', 0):,.2f}")
                 st.markdown(f"**Total inc VAT**  **€{totals.get('total_inc_vat', 0):,.2f}**")
 
-            # The benchmark section compares the predicted total cost to an average total from similar purchase orders (POs) in the past. 
-            # It shows the average total and the number of similar POs considered in the benchmark. 
-            # This allows the user to see how the predicted quote stacks up against historical data for similar jobs, providing
             bench = pred.get("benchmark", {})
             if bench.get("n_pos", 0) > 0:
                 st.divider()
@@ -240,16 +216,12 @@ with tab_chat:
                     f"**Benchmark:** €{bench.get('avg_total', 0):,.2f} "
                     f"(avg of {bench['n_pos']} similar PO(s))"
                 )
-            # Finally, the sources section lists the data sources that were used to generate the prediction, such as specific records from MongoDB or Neo4j.
-            # This provides transparency to the user about where the information is coming from and can help build trust in the prediction by showing the underlying data that informed it.
+
             ev = pred.get("evidence", {})
             if ev.get("stores_used"):
                 st.divider()
                 st.caption("**Stores used:** " + ", ".join(ev["stores_used"]))
 
-    #  Left column:
-    # This section implements the chat interface where the user can ask questions about customers, quotes, jobs, etc. 
-    # The conversation history is displayed here, with user messages and assistant responses.
     with col_chat:
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
@@ -257,25 +229,21 @@ with tab_chat:
                 if msg.get("metadata"):
                     meta = msg["metadata"]
                     with st.expander(
-                        f"Sources ({len(meta.get('sources', []))}) · " # the metadata for each message includes sources, latency, and routing information. 
-                                                                        # This is displayed in an expander to keep the main chat view clean, but allows the user to see the details if they want.
+                        f"Sources ({len(meta.get('sources', []))}) · "
                         f"{meta.get('latency_ms', 0)} ms · "
                         f"{meta.get('routing', {}).get('intent', '?')}"
                     ):
-                        if meta.get("sources"): # if there are sources listed in the metadata, display them in a bulleted list to show the user where the information in the assistant's response came from.
+                        if meta.get("sources"):
                             st.markdown("**Sources:**")
                             for src in meta["sources"]:
                                 st.markdown(f"- {src}")
-                        if meta.get("routing"): # if there is routing information in the metadata, display it as JSON to show the user how the query was processed 
-                                                # and which components of the system were involved in generating the response. This can help users understand the inner workings of the assistant and build trust in its responses.
+                        if meta.get("routing"):
                             st.markdown("---")
                             st.markdown("**Routing:**")
                             st.json(meta["routing"])
 
         typed_input = st.chat_input("Ask about a customer, quote, or job...")
 
-        #  The logic for handling user input checks if there is a new typed input from the user. 
-        # If not, it checks if there is a pending query set by one of the sample query buttons.
         user_input = None
         if typed_input:
             user_input = typed_input
@@ -288,15 +256,13 @@ with tab_chat:
             with st.chat_message("user"):
                 st.markdown(user_input)
 
-            result = None
+            result  = None
             latency = 0
-            with st.chat_message("assistant"): #  when the user submits a query, a new chat message is created for the assistant's response. 
-                # A spinner is shown while the system processes the query and searches MongoDB, Neo4j, 
-                # and Atlas Vector Search for relevant information to generate an answer. The time taken to get the answer is measured to provide latency information in the response metadata.
+            with st.chat_message("assistant"):
                 with st.spinner("Searching MongoDB, Neo4j, and Atlas Vector Search..."):
                     try:
                         t_start = time.time()
-                        result = answer_query(user_input, verbose=True)
+                        result  = answer_query(user_input, verbose=True)
                         latency = round((time.time() - t_start) * 1000)
                     except Exception as e:
                         err_str = str(e).lower()
@@ -310,15 +276,13 @@ with tab_chat:
                         else:
                             st.error(f"Error: {e}")
 
-                # The result from the query is expected to have an "answer" field which contains the assistant's response to the user's query. This answer is displayed in the chat interface.
                 if result is not None:
                     st.markdown(result["answer"])
                     raw_results = result.get("raw_results", {})
                     if "predict" in raw_results:
                         st.session_state.last_prediction = raw_results["predict"]
 
-                    with st.expander( # the expander for sources, latency, and routing information is also shown for the assistant's response, similar to how it's shown for past messages. 
-                                     # This allows the user to see the details of how the answer was generated for each response.
+                    with st.expander(
                         f"Sources ({len(result.get('sources', []))}) · "
                         f"{result.get('latency_ms', latency)} ms · "
                         f"{result.get('routing', {}).get('intent', '?')}"
@@ -331,11 +295,10 @@ with tab_chat:
                         st.markdown("**Routing:**")
                         st.json(result.get("routing", {}))
 
-            if result is not None: # after displaying the assistant's response and the metadata, the message is appended to the session state messages with the role of "assistant", 
-                                    # the content of the answer, and the metadata including sources, latency, and routing information. This ensures that the conversation history is maintained in the session state and can be displayed in future interactions.
+            if result is not None:
                 st.session_state.messages.append({
-                    "role":    "assistant",
-                    "content": result["answer"],
+                    "role":     "assistant",
+                    "content":  result["answer"],
                     "metadata": {
                         "sources":    result.get("sources", []),
                         "latency_ms": result.get("latency_ms", latency),
@@ -345,14 +308,236 @@ with tab_chat:
                 st.rerun()
 
 
-# ============ PAGE-WIDE FOOTER ============
+# ══════════════════════════════════════════════════════════════
+#  TAB 3 — DATA UPLOAD & INGEST ORCHESTRATOR
+# ══════════════════════════════════════════════════════════════
+with tab_upload:
 
+    st.markdown("## Data Upload & Ingest Orchestrator")
+    st.caption(
+        "Upload CSVs or PDFs into the correct GridFS bucket, "
+        "then run each ingestion step without touching the command line."
+    )
+
+    # ── Import ingest runner ──────────────────────────────────────────────────────
+    try:
+        from ingest.ingest_runner import (
+            run_load_mongo,
+            run_extract_pos,
+            run_embed_documents,
+        )
+        runner_available = True
+    except ImportError:
+        runner_available = False
+
+    buckets = get_gridfs_buckets()   # {csv, pdf, email}
+
+    # ── SECTION 1: Upload ─────────────────────────────────────────────────────────
+    st.markdown("### Upload files")
+
+    up_col1, up_col2 = st.columns([3, 1])
+    with up_col1:
+        uploaded_files = st.file_uploader(
+            "Choose CSVs or PDFs",
+            type=["csv", "pdf"],
+            accept_multiple_files=True,
+            key="gridfs_uploader",
+            help="CSVs → csv_files bucket · PDFs → po_files bucket",
+        )
+    with up_col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.caption("**CSVs** → `csv_files` bucket  \n**PDFs** → `po_files` bucket")
+
+    if uploaded_files:
+        if st.button("Upload to GridFS", type="primary", key="btn_upload"):
+            upload_results = []
+            progress = st.progress(0)
+
+            for idx, uf in enumerate(uploaded_files):
+                filename    = uf.name
+                is_pdf      = filename.lower().endswith(".pdf")
+                bucket      = buckets["pdf"] if is_pdf else buckets["csv"]
+                ctype       = "application/pdf" if is_pdf else "text/csv"
+                bucket_name = "po_files" if is_pdf else "csv_files"
+
+                if bucket.find_one({"filename": filename}):
+                    upload_results.append(("skip", filename, bucket_name))
+                else:
+                    try:
+                        file_id = bucket.put(
+                            uf.getvalue(),
+                            filename=filename,
+                            content_type=ctype,
+                        )
+                        upload_results.append(("ok", filename, bucket_name, str(file_id)))
+                    except Exception as exc:
+                        upload_results.append(("err", filename, bucket_name, str(exc)))
+
+                progress.progress((idx + 1) / len(uploaded_files))
+
+            progress.empty()
+            for row in upload_results:
+                if row[0] == "ok":
+                    st.success(f"✓ **{row[1]}** → `{row[2]}` (id: `{row[3]}`)")
+                elif row[0] == "skip":
+                    st.info(f"↷ **{row[1]}** already in `{row[2]}` — skipped")
+                else:
+                    st.error(f"✗ **{row[1]}** failed: {row[3]}")
+
+    st.divider()
+
+    # ── SECTION 2: Files currently in GridFS ─────────────────────────────────────
+    st.markdown("### Files in GridFS")
+
+    col_refresh, _ = st.columns([1, 4])
+    with col_refresh:
+        st.button("Refresh", key="btn_refresh_gridfs")
+
+    try:
+        bucket_map = {
+            "csv_files":   buckets["csv"],
+            "po_files":    buckets["pdf"],
+            "email_files": buckets["email"],
+        }
+
+        rows = []
+        for bucket_name, fs in bucket_map.items():
+            for d in fs.find():
+                rows.append({
+                    "Bucket":    bucket_name,
+                    "Filename":  d.filename,
+                    "Type":      d.content_type or "—",
+                    "Size (KB)": round(d.length / 1024, 1),
+                    "Uploaded":  d.upload_date.strftime("%Y-%m-%d %H:%M") if d.upload_date else "—",
+                })
+
+        if not rows:
+            st.info("No files found in any GridFS bucket.")
+        else:
+            df_fs = pd.DataFrame(rows).sort_values(["Bucket", "Filename"])
+            st.dataframe(df_fs, use_container_width=True, hide_index=True)
+            st.caption(
+                f"{len(rows)} file(s) total · "
+                f"{sum(r['Size (KB)'] for r in rows):.1f} KB · "
+                f"across {len(bucket_map)} buckets"
+            )
+
+    except Exception as e:
+        st.error(f"Could not read GridFS: {e}")
+
+    st.divider()
+
+    # ── SECTION 3: Pipeline ───────────────────────────────────────────────────────
+    st.markdown("### Ingest pipeline")
+    st.caption(
+        "Run steps in order after uploading. Each button calls the same "
+        "logic as the command-line ingest scripts."
+    )
+
+    if not runner_available:
+        st.warning(
+            "`ingest/ingest_runner.py` not found — pipeline buttons disabled. "
+            "Add it to `F:\\Apps\\DACARag\\ingest\\` to enable them."
+        )
+
+    pipeline_steps = [
+        {
+            "key":   "step_load_mongo",
+            "label": "① Load CSVs → MongoDB collections",
+            "desc":  "Reads CSVs from `csv_files` bucket and upserts into `customers`, "
+                     "`invoices`, `job_types`, `items`, `job_items`, `invoice_items`.",
+            "fn":    "run_load_mongo",
+        },
+        {
+            "key":   "step_extract_pos",
+            "label": "② Extract PO PDFs → `pos` collection",
+            "desc":  "Reads PDFs from `po_files` bucket, sends each to Claude Haiku "
+                     "for field extraction, upserts structured records into `pos`.",
+            "fn":    "run_extract_pos",
+        },
+        {
+            "key":   "step_embed",
+            "label": "③ Generate embeddings → Vector index",
+            "desc":  "Embeds email bodies, PO descriptions, and customer notes using "
+                     "all-MiniLM-L6-v2, writes 384-dim vectors into `embeddings`.",
+            "fn":    "run_embed_documents",
+        },
+    ]
+
+    for step in pipeline_steps:
+        if step["key"] not in st.session_state:
+            st.session_state[step["key"]] = "idle"
+
+    fn_map = {}
+    if runner_available:
+        fn_map = {
+            "run_load_mongo":      run_load_mongo,
+            "run_extract_pos":     run_extract_pos,
+            "run_embed_documents": run_embed_documents,
+        }
+
+    for step in pipeline_steps:
+        with st.container():
+            c_label, c_btn = st.columns([4, 1])
+            with c_label:
+                st.markdown(f"**{step['label']}**")
+                st.caption(step["desc"])
+            with c_btn:
+                state     = st.session_state[step["key"]]
+                btn_label = {
+                    "idle":    "Run",
+                    "running": "Running…",
+                    "done":    "✓ Done",
+                    "error":   "✗ Error",
+                }.get(state, "Run")
+
+                disabled = (not runner_available) or (state == "running")
+                if st.button(
+                    btn_label,
+                    key=f"btn_{step['key']}",
+                    disabled=disabled,
+                    use_container_width=True,
+                ):
+                    st.session_state[step["key"]] = "running"
+                    st.session_state.ingest_log.append(
+                        f"[{time.strftime('%H:%M:%S')}] Starting: {step['label']}"
+                    )
+                    try:
+                        result_msg = fn_map[step["fn"]]()
+                        st.session_state[step["key"]] = "done"
+                        st.session_state.ingest_log.append(
+                            f"[{time.strftime('%H:%M:%S')}] ✓ {step['label']}: {result_msg}"
+                        )
+                    except Exception as exc:
+                        st.session_state[step["key"]] = "error"
+                        st.session_state.ingest_log.append(
+                            f"[{time.strftime('%H:%M:%S')}] ✗ {step['label']} FAILED: {exc}"
+                        )
+                    st.rerun()
+
+        st.markdown(
+            "<hr style='border:none;border-top:1px solid #E5DDD2;margin:8px 0'>",
+            unsafe_allow_html=True,
+        )
+
+    if st.button("Reset pipeline status", key="btn_reset_pipeline"):
+        for step in pipeline_steps:
+            st.session_state[step["key"]] = "idle"
+        st.session_state.ingest_log = []
+        st.rerun()
+
+    if st.session_state.ingest_log:
+        st.markdown("### Ingest log")
+        st.code("\n".join(st.session_state.ingest_log), language=None)
+
+
+# ─────────────────────────────────────────────────────────────
+# PAGE-WIDE FOOTER
+# ─────────────────────────────────────────────────────────────
 st.markdown('<div class="page-footer">', unsafe_allow_html=True)
 
 footer_col_status, footer_col_clear = st.columns([5, 1])
 
-# The footer displays the current status of the system, including the number of records in MongoDB, nodes in Neo4j, chunks in the vector index, and the status of the pricing engine. 
-# This information is useful for debugging and gives the user insight into the underlying data that the assistant is working
 with footer_col_status:
     st.markdown(
         """
@@ -365,13 +550,11 @@ with footer_col_status:
 """,
         unsafe_allow_html=True,
     )
-# The footer also includes a "Clear chat" button that allows the user to reset the conversation history and clear any stored predictions. 
-# This is useful for starting a new conversation or if the user wants to clear the context after a series of interactions. 
-# When the button is clicked, the session state for messages and last_prediction is reset, and the app reruns to reflect the cleared state.
+
 with footer_col_clear:
     st.markdown('<div class="footer-clear">', unsafe_allow_html=True)
     if st.button("Clear chat", key="footer_clear_btn", use_container_width=True):
-        st.session_state.messages = []
+        st.session_state.messages        = []
         st.session_state.last_prediction = None
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
