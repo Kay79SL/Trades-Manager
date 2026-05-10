@@ -433,8 +433,28 @@ with tab_upload:
     st.markdown("### Ingest pipeline")
     st.caption(
         "Run steps in order after uploading. "
-        "Each button calls the same logic as the command-line ingest scripts."
+        "Results show which collections were updated."
     )
+    st.info("""
+    **Which steps to run after uploading:**
+
+     **New PO PDF** → run in this order: **② then ⑤ then ⑥**
+    - ② extracts fields from the PDF into the `pos` collection
+    - ⑤ creates the PO node in Neo4j and links to customer, job and materials
+    - ⑥ embeds the PO description so the chatbot can find it via vector search
+
+     **New CSV data** (customers, invoices, items) → run in this order: **① then ④ then ⑥**
+    - ① loads CSV records into MongoDB collections
+    - ④ projects the updated data into the Neo4j graph
+    - ⑥ regenerates embeddings to reflect new records
+
+     **New emails** → run in this order: **③ then ④ then ⑥**
+    - ③ extracts customer and job entities from emails
+    - ④ adds email nodes to the Neo4j graph
+    - ⑥ embeds email bodies for vector search
+
+     **Full rebuild** → click **▶ Run all steps**
+    """)
 
     if not runner_available:
         st.warning(
