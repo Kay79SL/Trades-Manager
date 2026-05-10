@@ -281,18 +281,7 @@ with tab_chat:
                     if "predict" in raw_results:
                         st.session_state.last_prediction = raw_results["predict"]
 
-                    with st.expander(
-                        f"Sources ({len(result.get('sources', []))}) · "
-                        f"{result.get('latency_ms', latency)} ms · "
-                        f"{result.get('routing', {}).get('intent', '?')}"
-                    ):
-                        if result.get("sources"):
-                            st.markdown("**Sources:**")
-                            for src in result["sources"]:
-                                st.markdown(f"- {src}")
-                        st.markdown("---")
-                        st.markdown("**Routing:**")
-                        st.json(result.get("routing", {}))
+
 
             if result is not None:
                 st.session_state.messages.append({
@@ -602,9 +591,7 @@ with tab_upload:
                     )
             st.rerun()
 
-    if st.session_state.ingest_log:
-        st.markdown("### Ingest log")
-        st.code("\n".join(st.session_state.ingest_log), language=None)
+
 
 
 # ─────────────────────────────────────────────────────────────
