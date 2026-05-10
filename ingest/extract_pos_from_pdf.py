@@ -8,7 +8,7 @@ realistic production scenario: customers send PDF purchase orders, and the
 chatbot must extract structured data from them automatically.
 
 Pipeline:
-  1. Read each PDF from data/purchase_orders/
+  1. Read each PDF from GridFS po_files bucket
   2. Extract text content with pypdf (fast, no OCR needed for digital PDFs)
   3. Send the text to Claude with a structured-extraction prompt
   4. Parse the JSON response
@@ -28,7 +28,6 @@ subsequent POs (database is re-queried each time), so multiple POs from
 the same new customer all link to a single customer_id.
 
 After this script runs, downstream pipeline steps work unchanged:
-  - load_po_pdfs.py     — copies PDF binaries into GridFS bucket po_files
   - load_pos_to_neo4j.py — adds PO nodes to Neo4j with FOR_CUSTOMER, FOR_JOB, CONTAINS_ITEM edges
 
 Cost: ~€0.05 per PO using claude-haiku-4-5. All 15 POs ≈ €0.75.
@@ -36,10 +35,9 @@ Cost: ~€0.05 per PO using claude-haiku-4-5. All 15 POs ≈ €0.75.
 Usage:
     python ingest\\extract_pos_from_pdf.py --dry-run   # show prompt, no API calls
     python ingest\\extract_pos_from_pdf.py --limit 3   # test on 3 PDFs first
-    python ingest\\extract_pos_from_pdf.py             # full run on all 15 PDFs
+    python ingest\\extract_pos_from_pdf.py             # full run on all PDFs in GridFS
     python ingest\\extract_pos_from_pdf.py --force     # re-extract all (overwrite)
     python ingest\\extract_pos_from_pdf.py --no-auto-add   # don't auto-add unknown customers
-    python ingest\\extract_pos_from_pdf.py --pdf-dir PATH  # custom folder
 
 Dependencies:
     python -m pip install pypdf
@@ -48,6 +46,7 @@ Dependencies:
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import os
 import re
@@ -64,6 +63,7 @@ except ImportError:
     print("Install with: python -m pip install pypdf")
     sys.exit(1)
 
+import gridfs
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from pymongo import MongoClient
@@ -74,7 +74,6 @@ from tqdm import tqdm
 # Configuration
 # ---------------------------------------------------------------------------
 
-DEFAULT_PDF_DIR = Path("data") / "purchase_orders"
 TARGET_COLLECTION = "pos"   # main PO collection (PDF + AI is the only ingestion path)
 MODEL = "claude-haiku-4-5-20251001"
 MAX_TOKENS = 2000   # POs are bigger than emails — more line items, more text
@@ -102,15 +101,15 @@ Be precise:
 
 
 # ---------------------------------------------------------------------------
-# PDF reading
+# PDF reading — from bytes (GridFS) instead of file path
 # ---------------------------------------------------------------------------
 
-def extract_pdf_text(pdf_path: Path) -> str:
+def extract_pdf_text_from_bytes(pdf_bytes: bytes) -> str:
     """
-    Extract all text from a PDF file. Works for digital PDFs (which yours are
+    Extract all text from PDF bytes. Works for digital PDFs (which yours are
     since they were generated from Excel). Would need OCR for scanned PDFs.
     """
-    reader = pypdf.PdfReader(str(pdf_path))
+    reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
     pages = []
     for page in reader.pages:
         pages.append(page.extract_text() or "")
@@ -258,7 +257,7 @@ def match_or_add_customer(db, po: dict, auto_add: bool = True) -> tuple[str | No
     cust_email = normalize_email(po.get("cust_email"))
     cust_name = (po.get("cust_name") or "").strip()
 
-    # Strategy 1: email match (always re-query so within-batch additions are seen)
+    # Strategy 1: email match
     if cust_email:
         existing = db.customers.find_one(
             {"email": cust_email},
@@ -279,15 +278,13 @@ def match_or_add_customer(db, po: dict, auto_add: bool = True) -> tuple[str | No
             if existing:
                 return existing["customer_id"], "matched_name"
 
-    # Strategy 3: auto-add (if enabled and we have enough data)
+    # Strategy 3: auto-add
     if not auto_add:
         return None, "no_match"
 
     if not cust_email and not cust_name:
-        # Not enough info to create a customer record
         return None, "no_match"
 
-    # Build new customer record from PO data
     name_parts = cust_name.split(maxsplit=1)
     first = name_parts[0] if len(name_parts) >= 1 else ""
     last = name_parts[1] if len(name_parts) >= 2 else ""
@@ -320,8 +317,6 @@ def match_or_add_customer(db, po: dict, auto_add: bool = True) -> tuple[str | No
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--pdf-dir", type=str, default=str(DEFAULT_PDF_DIR),
-                        help=f"Folder of PO PDFs (default: {DEFAULT_PDF_DIR})")
     parser.add_argument("--limit", type=int, default=0,
                         help="Max PDFs to process (0 = all)")
     parser.add_argument("--force", action="store_true",
@@ -329,7 +324,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true",
                         help="Show the prompt for the first PDF, no API calls")
     parser.add_argument("--no-auto-add", action="store_true",
-                        help="Don't auto-add unknown customers (leave matched_customer_id null)")
+                        help="Don't auto-add unknown customers")
     args = parser.parse_args()
 
     load_dotenv()
@@ -345,8 +340,6 @@ def main() -> None:
     if not api_key and not args.dry_run:
         print("ERROR: ANTHROPIC_API_KEY not set in .env"); sys.exit(1)
 
-    # Show current customer count (we re-query the DB each time during extraction
-    # so within-batch additions are picked up on subsequent POs)
     initial_customer_count = db.customers.count_documents({})
     print(f"Current customers in DB: {initial_customer_count}")
     if args.no_auto_add:
@@ -355,46 +348,48 @@ def main() -> None:
         print("Auto-add of unknown customers: ENABLED")
     print()
 
-    pdf_dir = Path(args.pdf_dir)
-    if not pdf_dir.exists():
-        print(f"ERROR: PDF folder not found at {pdf_dir}"); sys.exit(1)
+    # ── Read PDFs from GridFS po_files bucket ────────────────────────────────
+    fs = gridfs.GridFS(db, collection="po_files")
+    grid_docs = list(fs.find())
 
-    pdfs = sorted(pdf_dir.glob("*.pdf"))
-    if not pdfs:
-        print(f"ERROR: no .pdf files in {pdf_dir}"); sys.exit(1)
+    if not grid_docs:
+        print("ERROR: no PDFs found in GridFS po_files bucket.")
+        print("Upload PDFs via the Streamlit Data Upload tab first.")
+        sys.exit(1)
 
-    print(f"Found {len(pdfs)} PDF(s) in {pdf_dir}\n")
+    print(f"Found {len(grid_docs)} PDF(s) in GridFS po_files bucket\n")
 
     # Skip already-extracted unless --force
     if not args.force:
         existing = {d["po_number"] for d in db[TARGET_COLLECTION].find(
             {}, {"po_number": 1, "_id": 0}
         )}
-        new_pdfs = [
-            p for p in pdfs
-            if detect_po_number(p.name, "") not in existing
+        new_docs = [
+            g for g in grid_docs
+            if detect_po_number(g.filename, "") not in existing
         ]
-        if len(new_pdfs) < len(pdfs):
-            print(f"  {len(pdfs) - len(new_pdfs)} already extracted (skipping). "
+        if len(new_docs) < len(grid_docs):
+            print(f"  {len(grid_docs) - len(new_docs)} already extracted (skipping). "
                   f"Use --force to redo all.")
-        pdfs = new_pdfs
+        grid_docs = new_docs
 
-    if args.limit and len(pdfs) > args.limit:
-        pdfs = pdfs[:args.limit]
+    if args.limit and len(grid_docs) > args.limit:
+        grid_docs = grid_docs[:args.limit]
         print(f"  Limiting to {args.limit} PDF(s)")
 
-    if not pdfs:
+    if not grid_docs:
         print("Nothing to process. Use --force to re-extract.")
         return
 
     # Dry run
     if args.dry_run:
-        sample_pdf = pdfs[0]
-        text = extract_pdf_text(sample_pdf)
-        po_num = detect_po_number(sample_pdf.name, text)
+        sample = grid_docs[0]
+        pdf_bytes = sample.read()
+        text = extract_pdf_text_from_bytes(pdf_bytes)
+        po_num = detect_po_number(sample.filename, text)
         prompt = build_prompt(text, po_num)
         print("=" * 60)
-        print(f"DRY RUN — would extract from: {sample_pdf.name}")
+        print(f"DRY RUN — would extract from: {sample.filename}")
         print(f"PDF text length: {len(text)} chars")
         print(f"PO number detected: {po_num}")
         print("=" * 60)
@@ -409,21 +404,23 @@ def main() -> None:
     success = 0
     failures: list[tuple[str, str]] = []
 
-    # Track customer matching outcomes
     action_stats = {
         "matched_email":  0,
         "matched_name":   0,
         "added_new":      0,
         "no_match":       0,
     }
-    new_customers_log: list[tuple[str, str, str]] = []  # (po_number, customer_id, name)
+    new_customers_log: list[tuple[str, str, str]] = []
 
-    for pdf_path in tqdm(pdfs, desc="Extracting"):
+    for grid_out in tqdm(grid_docs, desc="Extracting"):
         try:
-            text = extract_pdf_text(pdf_path)
+            # Read bytes from GridFS and extract text
+            pdf_bytes = grid_out.read()
+            text = extract_pdf_text_from_bytes(pdf_bytes)
             if not text.strip():
                 raise ValueError("PDF text extraction returned empty")
-            po_num = detect_po_number(pdf_path.name, text)
+
+            po_num = detect_po_number(grid_out.filename, text)
             prompt = build_prompt(text, po_num)
 
             extracted = extract_one(client, SYSTEM_PROMPT_PDF_PO, prompt)
@@ -443,7 +440,7 @@ def main() -> None:
                     extracted.get("cust_name", ""),
                 ))
 
-            extracted["_source_pdf"] = pdf_path.name
+            extracted["_source_pdf"] = grid_out.filename
             extracted["_extracted_at"] = time.time()
             extracted["_model"] = MODEL
             extracted["_extraction_method"] = "pdf_via_llm"
@@ -455,7 +452,7 @@ def main() -> None:
             )
             success += 1
         except Exception as e:
-            failures.append((pdf_path.name, str(e)[:200]))
+            failures.append((grid_out.filename, str(e)[:200]))
 
     db[TARGET_COLLECTION].create_index("po_number", unique=True)
     db[TARGET_COLLECTION].create_index("matched_customer_id")
@@ -470,7 +467,6 @@ def main() -> None:
         for name, err in failures[:5]:
             print(f"  {name}: {err}")
 
-    # Customer matching summary
     print(f"\nCustomer matching outcomes:")
     print(f"  Matched by email:       {action_stats['matched_email']}")
     print(f"  Matched by name:        {action_stats['matched_name']}")
@@ -492,7 +488,6 @@ def main() -> None:
     print(f"\nTotal POs in {TARGET_COLLECTION}: {total}")
     print(f"POs linked to customer:   {matched_cust}/{total}")
 
-    # Confidence breakdown
     print(f"\nConfidence distribution:")
     for r in db[TARGET_COLLECTION].aggregate([
         {"$match": {"extraction_confidence": {"$exists": True}}},
@@ -502,7 +497,6 @@ def main() -> None:
         print(f"  {str(r['_id']):15} {r['count']}")
 
     print(f"\nNext steps:")
-    print(f"  python ingest\\load_po_pdfs.py        # PDFs to GridFS")
     print(f"  python ingest\\load_pos_to_neo4j.py   # POs into graph")
 
 
