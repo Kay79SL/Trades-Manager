@@ -1,40 +1,31 @@
 """
 load_po_pdfs.py
 ================
-Phase 3B step: load PO PDF binaries into MongoDB GridFS bucket `po_files`.
+Phase 3B step: enrich PO PDF metadata in GridFS bucket `po_files`
+and cross-link to the pos collection.
 
-Mirrors the .eml → email_files pattern from load_mongo.py — gives the
-chatbot a way to retrieve the original PDF for any po_number, while the
-parsed structured data already lives in the pos collection.
-
-Looks for PDFs at:  data\\purchase_orders\\PO-*.pdf
-Stores in bucket:   po_files (GridFS)
-Tagged with:        po_number, content_type, original_filename
+PDFs are already in GridFS (uploaded via Streamlit or original ingest).
+This script:
+  1. Iterates po_files.files documents
+  2. Adds missing metadata: po_number, original_filename, size_bytes
+  3. Cross-links each PDF to its matching pos document
 
 Usage:
     python ingest\\load_po_pdfs.py
-    python ingest\\load_po_pdfs.py --drop          # drop bucket first (clean reload)
-    python ingest\\load_po_pdfs.py --pdf-dir PATH  # custom PDF folder
 """
 
 from __future__ import annotations
 
-import argparse
 import os
 import re
 import sys
 from pathlib import Path
 
 import gridfs
-from dotenv import load_dotenv
 from pymongo import MongoClient
 from tqdm import tqdm
 
-
-DEFAULT_PDF_DIR = Path("data") / "purchase_orders"
-BUCKET_NAME = "po_files"
-
-# PO number pattern: PO-2026-P0042, PO-2026-C0019, PO-2026-E0073, etc.
+BUCKET_NAME  = "po_files"
 PO_NUMBER_RE = re.compile(r"PO-\d{4}-[A-Z]\d{4}", re.IGNORECASE)
 
 
@@ -43,90 +34,94 @@ def extract_po_number(filename: str) -> str:
     match = PO_NUMBER_RE.search(filename)
     if match:
         return match.group(0).upper()
-    # Fall back to the whole stem if no canonical PO number found
     return Path(filename).stem
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--pdf-dir", type=str, default=str(DEFAULT_PDF_DIR),
-                        help=f"Folder containing PO PDFs (default: {DEFAULT_PDF_DIR})")
-    parser.add_argument("--drop", action="store_true",
-                        help="Drop the GridFS bucket before loading")
-    args = parser.parse_args()
+    # ── Connect ───────────────────────────────────────────────
+    # Works on Streamlit Cloud (env injected by ingest_runner)
+    # and locally (env set by .env via load_dotenv in calling script)
+    mongo_uri = os.environ.get("MONGO_URI")
+    db_name   = os.environ.get("MONGO_DB", "trades_quotes")
 
-    load_dotenv()
-    mongo_uri = os.getenv("MONGO_URI")
-    db_name = os.getenv("MONGO_DB", "trades_quotes")
     if not mongo_uri:
-        print("ERROR: MONGO_URI not set in .env"); sys.exit(1)
+        # Last-resort local fallback
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+            mongo_uri = os.environ.get("MONGO_URI")
+        except ImportError:
+            pass
 
-    pdf_dir = Path(args.pdf_dir)
-    if not pdf_dir.exists():
-        print(f"ERROR: PDF folder not found at {pdf_dir}"); sys.exit(1)
-
-    pdfs = sorted(pdf_dir.glob("*.pdf"))
-    if not pdfs:
-        print(f"ERROR: No .pdf files found in {pdf_dir}"); sys.exit(1)
+    if not mongo_uri:
+        print("ERROR: MONGO_URI not set."); sys.exit(1)
 
     print(f"Connecting to MongoDB ({db_name})...")
     db = MongoClient(mongo_uri)[db_name]
     fs = gridfs.GridFS(db, collection=BUCKET_NAME)
 
-    if args.drop:
-        print(f"Dropping bucket '{BUCKET_NAME}'...")
-        db[f"{BUCKET_NAME}.files"].drop()
-        db[f"{BUCKET_NAME}.chunks"].drop()
+    # ── Enrich metadata on existing po_files.files docs ──────
+    files_coll = db[f"{BUCKET_NAME}.files"]
+    all_files  = list(files_coll.find({}))
 
-    print(f"\nUploading {len(pdfs)} PDFs to GridFS bucket '{BUCKET_NAME}'...")
+    if not all_files:
+        print("ERROR: No files found in GridFS po_files bucket.")
+        print("Upload PDFs via the Streamlit Data Upload tab first.")
+        sys.exit(1)
 
-    skipped = 0
-    uploaded = 0
-    for pdf_path in tqdm(pdfs, desc="  uploading"):
-        po_number = extract_po_number(pdf_path.name)
-        # Skip if already uploaded (idempotent)
-        if not args.drop and fs.exists({"po_number": po_number}):
-            skipped += 1
-            continue
+    print(f"\nFound {len(all_files)} file(s) in GridFS po_files bucket.")
+    print("Enriching metadata...")
 
-        with pdf_path.open("rb") as f:
-            content = f.read()
+    enriched = 0
+    for doc in tqdm(all_files, desc="  enriching"):
+        filename  = doc.get("filename", "")
+        po_number = extract_po_number(filename)
 
-        fs.put(
-            content,
-            filename=pdf_path.name,
-            po_number=po_number,
-            content_type="application/pdf",
-            original_filename=pdf_path.name,
-            size_bytes=len(content),
-        )
-        uploaded += 1
+        update = {}
 
-    print(f"\n  Uploaded: {uploaded}")
-    print(f"  Skipped (already present): {skipped}")
+        # Add po_number if missing
+        if not doc.get("po_number"):
+            update["po_number"] = po_number
 
-    # Cross-link to the pos collection
+        # Add original_filename if missing
+        if not doc.get("original_filename"):
+            update["original_filename"] = filename
+
+        # Add size_bytes from GridFS length field if missing
+        if not doc.get("size_bytes") and doc.get("length"):
+            update["size_bytes"] = doc["length"]
+
+        if update:
+            files_coll.update_one({"_id": doc["_id"]}, {"$set": update})
+            enriched += 1
+
+    print(f"  Enriched: {enriched} document(s)")
+    print(f"  Already complete: {len(all_files) - enriched} document(s)")
+
+    # ── Cross-link to pos collection ──────────────────────────
     print(f"\nCross-linking to pos collection...")
-    pos_count = db.pos.count_documents({})
     matched = 0
-    for pdf_doc in db[f"{BUCKET_NAME}.files"].find({}, {"po_number": 1}):
-        po_number = pdf_doc.get("po_number")
+    pos_count = db.pos.count_documents({})
+
+    for doc in files_coll.find({}, {"po_number": 1, "filename": 1}):
+        po_number = doc.get("po_number")
         if po_number:
             result = db.pos.update_one(
                 {"po_number": po_number},
-                {"$set": {"pdf_gridfs_filename": pdf_doc.get("filename")}},
+                {"$set": {"pdf_gridfs_filename": doc.get("filename")}},
             )
             if result.matched_count:
                 matched += 1
 
-    print(f"  Cross-linked PDFs to pos documents: {matched}/{pos_count}")
+    print(f"  Cross-linked: {matched}/{pos_count} PO records")
 
-    # Final summary
-    files_count = db[f"{BUCKET_NAME}.files"].count_documents({})
+    # ── Summary ───────────────────────────────────────────────
+    files_count  = files_coll.count_documents({})
     chunks_count = db[f"{BUCKET_NAME}.chunks"].count_documents({})
     print(f"\nFinal state:")
     print(f"  {BUCKET_NAME}.files:  {files_count} files")
     print(f"  {BUCKET_NAME}.chunks: {chunks_count} chunks")
+    print(f"  pos documents:        {pos_count}")
 
 
 if __name__ == "__main__":
