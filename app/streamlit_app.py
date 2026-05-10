@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import sys
 import time
-import io
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -83,7 +82,7 @@ with st.spinner("Loading embedding model (one-time, ~10 sec)..."):
 @st.cache_resource
 def get_gridfs_buckets():
     """
-    Returns all three named GridFS buckets used by this project.
+    Returns all three named GridFS buckets:
       csv_files   — seed CSVs
       po_files    — supplier PO PDFs
       email_files — raw .eml files
@@ -319,20 +318,23 @@ with tab_upload:
         "then run each ingestion step without touching the command line."
     )
 
-    # ── Import ingest runner ──────────────────────────────────────────────────────
+    # ── Import ingest runner ──────────────────────────────────
     try:
         from ingest.ingest_runner import (
             run_load_mongo,
             run_extract_pos,
+            run_extract_entities,
+            run_load_neo4j,
+            run_load_pos_neo4j,
             run_embed_documents,
         )
         runner_available = True
     except ImportError:
         runner_available = False
 
-    buckets = get_gridfs_buckets()   # {csv, pdf, email}
+    buckets = get_gridfs_buckets()
 
-    # ── SECTION 1: Upload ─────────────────────────────────────────────────────────
+    # ── SECTION 1: Upload ─────────────────────────────────────
     st.markdown("### Upload files")
 
     up_col1, up_col2 = st.columns([3, 1])
@@ -386,7 +388,7 @@ with tab_upload:
 
     st.divider()
 
-    # ── SECTION 2: Files currently in GridFS ─────────────────────────────────────
+    # ── SECTION 2: Files in GridFS ────────────────────────────
     st.markdown("### Files in GridFS")
 
     col_refresh, _ = st.columns([1, 4])
@@ -427,53 +429,80 @@ with tab_upload:
 
     st.divider()
 
-    # ── SECTION 3: Pipeline ───────────────────────────────────────────────────────
+    # ── SECTION 3: Full ingest pipeline ──────────────────────
     st.markdown("### Ingest pipeline")
     st.caption(
-        "Run steps in order after uploading. Each button calls the same "
-        "logic as the command-line ingest scripts."
+        "Run steps in order after uploading. "
+        "Each button calls the same logic as the command-line ingest scripts."
     )
 
     if not runner_available:
         st.warning(
             "`ingest/ingest_runner.py` not found — pipeline buttons disabled. "
-            "Add it to `F:\\Apps\\DACARag\\ingest\\` to enable them."
+            "Add it to the `ingest/` folder and redeploy."
         )
 
+    # All 6 pipeline steps
     pipeline_steps = [
         {
             "key":   "step_load_mongo",
-            "label": "① Load CSVs → MongoDB collections",
-            "desc":  "Reads CSVs from `csv_files` bucket and upserts into `customers`, "
+            "label": "① Load CSVs → MongoDB",
+            "desc":  "Reads CSVs from `csv_files` bucket · upserts into `customers`, "
                      "`invoices`, `job_types`, `items`, `job_items`, `invoice_items`.",
             "fn":    "run_load_mongo",
         },
         {
             "key":   "step_extract_pos",
-            "label": "② Extract PO PDFs → `pos` collection",
-            "desc":  "Reads PDFs from `po_files` bucket, sends each to Claude Haiku "
-                     "for field extraction, upserts structured records into `pos`.",
+            "label": "② Extract PO PDFs → `pos`",
+            "desc":  "Reads PDFs from `po_files` bucket · Claude Haiku extracts fields · "
+                     "upserts structured records into `pos` collection.",
             "fn":    "run_extract_pos",
         },
         {
+            "key":   "step_extract_entities",
+            "label": "③ Extract entities from emails",
+            "desc":  "Reads emails from `email_files` bucket · Claude Haiku extracts "
+                     "customer and job entities · writes into `emails` collection.",
+            "fn":    "run_extract_entities",
+        },
+        {
+            "key":   "step_load_neo4j",
+            "label": "④ Load MongoDB → Neo4j graph",
+            "desc":  "Projects customers, invoices, job types and items from MongoDB "
+                     "into Neo4j as nodes and relationships.",
+            "fn":    "run_load_neo4j",
+        },
+        {
+            "key":   "step_load_pos_neo4j",
+            "label": "⑤ Load POs → Neo4j graph",
+            "desc":  "Creates PO nodes in Neo4j · connects to Customer, JobType and "
+                     "Item nodes via FOR_CUSTOMER, FOR_JOB, CONTAINS_ITEM relationships.",
+            "fn":    "run_load_pos_neo4j",
+        },
+        {
             "key":   "step_embed",
-            "label": "③ Generate embeddings → Vector index",
-            "desc":  "Embeds email bodies, PO descriptions, and customer notes using "
-                     "all-MiniLM-L6-v2, writes 384-dim vectors into `embeddings`.",
+            "label": "⑥ Generate embeddings → Vector index",
+            "desc":  "Embeds email bodies, PO descriptions and customer notes using "
+                     "all-MiniLM-L6-v2 · writes 384-dim vectors into `embeddings`.",
             "fn":    "run_embed_documents",
         },
     ]
 
+    # Initialise step states
     for step in pipeline_steps:
         if step["key"] not in st.session_state:
             st.session_state[step["key"]] = "idle"
 
+    # Build function map
     fn_map = {}
     if runner_available:
         fn_map = {
-            "run_load_mongo":      run_load_mongo,
-            "run_extract_pos":     run_extract_pos,
-            "run_embed_documents": run_embed_documents,
+            "run_load_mongo":        run_load_mongo,
+            "run_extract_pos":       run_extract_pos,
+            "run_extract_entities":  run_extract_entities,
+            "run_load_neo4j":        run_load_neo4j,
+            "run_load_pos_neo4j":    run_load_pos_neo4j,
+            "run_embed_documents":   run_embed_documents,
         }
 
     for step in pipeline_steps:
@@ -520,11 +549,38 @@ with tab_upload:
             unsafe_allow_html=True,
         )
 
-    if st.button("Reset pipeline status", key="btn_reset_pipeline"):
-        for step in pipeline_steps:
-            st.session_state[step["key"]] = "idle"
-        st.session_state.ingest_log = []
-        st.rerun()
+    col_reset, col_runall = st.columns([1, 1])
+    with col_reset:
+        if st.button("Reset pipeline", key="btn_reset_pipeline", use_container_width=True):
+            for step in pipeline_steps:
+                st.session_state[step["key"]] = "idle"
+            st.session_state.ingest_log = []
+            st.rerun()
+    with col_runall:
+        if st.button(
+            "▶ Run all steps",
+            key="btn_run_all",
+            type="primary",
+            disabled=not runner_available,
+            use_container_width=True,
+        ):
+            for step in pipeline_steps:
+                st.session_state[step["key"]] = "running"
+                st.session_state.ingest_log.append(
+                    f"[{time.strftime('%H:%M:%S')}] Starting: {step['label']}"
+                )
+                try:
+                    result_msg = fn_map[step["fn"]]()
+                    st.session_state[step["key"]] = "done"
+                    st.session_state.ingest_log.append(
+                        f"[{time.strftime('%H:%M:%S')}] ✓ {step['label']}: {result_msg}"
+                    )
+                except Exception as exc:
+                    st.session_state[step["key"]] = "error"
+                    st.session_state.ingest_log.append(
+                        f"[{time.strftime('%H:%M:%S')}] ✗ {step['label']} FAILED: {exc}"
+                    )
+            st.rerun()
 
     if st.session_state.ingest_log:
         st.markdown("### Ingest log")
